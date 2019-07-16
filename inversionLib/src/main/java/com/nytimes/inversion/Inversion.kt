@@ -51,12 +51,3 @@ interface InversionFactory2<T, P> {
 
 @JvmName("factory2")
 fun <T : Any, P> Inversion.factory2(c: KClass<T>): InversionFactory2<T, P> = TODO()
-
-
-fun <T : Any> Inversion.abc(c : KClass<T>): T = TODO()
-
-fun Inversion.abc(c: KClass<String>): String = "abc"
-
-fun main() {
-    print(Inversion.abc(String::class))
-}

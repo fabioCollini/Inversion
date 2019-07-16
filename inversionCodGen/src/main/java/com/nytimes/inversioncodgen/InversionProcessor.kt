@@ -21,14 +21,10 @@ import kotlin.reflect.KClass
 @SupportedOptions(InversionProcessor.KAPT_KOTLIN_GENERATED_OPTION_NAME)
 class InversionProcessor : AbstractProcessor() {
 
-    override fun getSupportedAnnotationTypes(): MutableSet<String> {
-        return mutableSetOf(InversionImpl::class.java.name, InversionDef::class.java.name)
-    }
+    override fun getSupportedAnnotationTypes() =
+        mutableSetOf(InversionImpl::class.java.name, InversionDef::class.java.name)
 
-    override fun getSupportedSourceVersion(): SourceVersion {
-        return SourceVersion.latest()
-    }
-
+    override fun getSupportedSourceVersion(): SourceVersion = SourceVersion.latest()
 
     override fun process(
         set: MutableSet<out TypeElement>?,
@@ -37,18 +33,11 @@ class InversionProcessor : AbstractProcessor() {
         roundEnvironment?.getElementsAnnotatedWith(InversionImpl::class.java)
             .orEmpty()
             .filterIsInstance<ExecutableElement>()
-            .forEach {
-                val pack = getPackageName(it)
-                generateImpl(it)
-            }
+            .forEach { generateImpl(it) }
         roundEnvironment?.getElementsAnnotatedWith(InversionDef::class.java)
             .orEmpty()
             .filterIsInstance<VariableElement>()
-            .forEach {
-                val className = it.simpleName.toString()
-                val pack = processingEnv.elementUtils.getPackageOf(it).toString()
-                generateDefClass(it)
-            }
+            .forEach { generateDefClass(it) }
         return true
     }
 
@@ -84,7 +73,6 @@ class InversionProcessor : AbstractProcessor() {
     }
 
     private fun generateDefClass(element: VariableElement) {
-        val methodName = element.simpleName.toString()
         val pack = getPackageName(element)
         val returnType = element.asType().asTypeName()
         val arg = (returnType as ParameterizedTypeName).typeArguments[0] as ClassName
@@ -93,18 +81,6 @@ class InversionProcessor : AbstractProcessor() {
             .addType(
                 TypeSpec.interfaceBuilder(factoryInterface)
                     .addSuperinterface(returnType)
-//                    .addAnnotation(
-//                        AnnotationSpec.builder(AutoService::class)
-//                            .addMember(factoryInterface.simpleName + "::class")
-//                            .build()
-//                    )
-//                    .addFunction(
-//                        FunSpec.builder("invoke")
-//                            .addModifiers(KModifier.OVERRIDE)
-//                            .returns(element.returnType.asTypeName())
-//                            .addStatement("return ${element.simpleName}()")
-//                            .build()
-//                    )
                     .build()
             )
             .addFunction(
@@ -122,33 +98,7 @@ class InversionProcessor : AbstractProcessor() {
             )
             .build()
 
-//        @JvmName("factory_MyInterface")
-//        fun Inversion.factory(c: KClass<MyInterface>): InversionFactory<MyInterface> = loadSingleService<MyInterfaceFactory>()
-
         file.writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
-
-//        val fileName = "MyFactory"
-//        val fileContent = """
-//        package $pack
-//
-//        import com.nytimes.inversion.Inversion
-//        import com.nytimes.inversion.InversionFactory
-//        import com.nytimes.inversion.loadSingleService
-//        import kotlin.reflect.KClass
-//
-//
-//        interface MyInterfaceFactory : InversionFactory<MyInterface>
-//
-//        @JvmName("factory_MyInterface")
-//        fun Inversion.factory(c: KClass<MyInterface>): InversionFactory<MyInterface> = loadSingleService<MyInterfaceFactory>()
-//        """.trimIndent()
-//
-//        val kaptKotlinGeneratedDir = processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]
-//        val dir = File(kaptKotlinGeneratedDir, "com/nytimes/libimpl/")
-//        dir.mkdirs()
-//        val file = File(dir, "$fileName.kt")
-//
-//        file.writeText(fileContent)
     }
 
     companion object {
