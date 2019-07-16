@@ -83,12 +83,13 @@ class InversionProcessor : AbstractProcessor() {
     private fun generateDefClass(element: VariableElement) {
         val pack = getPackageName(element)
         val factoryType = element.asType().asTypeName() as ParameterizedTypeName
-        val returnType = factoryType.typeArguments.last() as ClassName
+        val args = factoryType.typeArguments
+        val returnType = args.last() as ClassName
         val realFactoryType = LambdaTypeName.get(
             returnType = returnType,
-            parameters = *factoryType.typeArguments.subList(
+            parameters = *args.subList(
                 0,
-                factoryType.typeArguments.size - 1
+                args.size - 1
             ).toTypedArray()
         )
         val factoryInterface = ClassName(returnType.packageName, returnType.simpleName + "Factory")
@@ -103,7 +104,7 @@ class InversionProcessor : AbstractProcessor() {
 
         FileSpec.builder("com.nytimes.inversion", "Inversion_ext_MyFactory")
             .addFunction(
-                FunSpec.builder("factory")
+                FunSpec.builder("factory" + if (args.size > 1) args.size - 1 else "")
                     .addAnnotation(
                         AnnotationSpec.builder(JvmName::class)
                             .addMember("\"factory_${returnType.toString().replace('.', '_')}\"")

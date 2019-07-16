@@ -40,10 +40,5 @@ annotation class InversionImpl
 
 fun <T : Any> Inversion.factory(c: KClass<T>): () -> T = TODO()
 
-
-interface InversionFactory2<T, P> {
-    operator fun invoke(p: P): T
-}
-
-@JvmName("factory2")
-fun <T : Any, P> Inversion.factory2(c: KClass<T>): InversionFactory2<T, P> = TODO()
+@JvmName("factory1")
+fun <T : Any, P> Inversion.factory1(c: KClass<T>): (P) -> T = TODO()

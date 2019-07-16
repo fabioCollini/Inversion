@@ -125,7 +125,7 @@ class InversionProcessorTest {
                 
                     companion object {
                         @InversionDef
-                        val factory: (MyClass) -> MyInterface = Inversion.factory(MyInterface::class)
+                        val factory: (MyClass) -> MyInterface = Inversion.factory1(MyInterface::class)
                     }
                 }
         """.trimIndent()
@@ -155,7 +155,7 @@ class InversionProcessorTest {
                         import kotlin.reflect.KClass
                         
                         @JvmName("factory_com_nytimes_libinterface_MyInterface")
-                        fun Inversion.factory(c: KClass<MyInterface>): (MyClass) -> MyInterface =
+                        fun Inversion.factory1(c: KClass<MyInterface>): (MyClass) -> MyInterface =
                             loadSingleService<MyInterfaceFactory>()
         
                         """.trimIndent()
