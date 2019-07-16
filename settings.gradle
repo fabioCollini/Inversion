@@ -1,0 +1,2 @@
+include ':app', ':libinterface', ':libimpl', ':inversionLib', ':inversionCodGen'
+rootProject.name='inversion'
