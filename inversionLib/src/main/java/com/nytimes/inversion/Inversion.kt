@@ -38,11 +38,7 @@ annotation class InversionImpl
 //fun Inversion.getList(c: KClass<MyInterface>): List<MyInterface> =
 //    loadServiceList<MyInterfaceFactory>().map { it.create() }
 
-interface InversionFactory<T> {
-    operator fun invoke(): T
-}
-
-fun <T : Any> Inversion.factory(c: KClass<T>): InversionFactory<T> = TODO()
+fun <T : Any> Inversion.factory(c: KClass<T>): () -> T = TODO()
 
 
 interface InversionFactory2<T, P> {

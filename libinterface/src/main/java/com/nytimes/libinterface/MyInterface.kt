@@ -2,14 +2,13 @@ package com.nytimes.libinterface
 
 import com.nytimes.inversion.Inversion
 import com.nytimes.inversion.InversionDef
-import com.nytimes.inversion.InversionFactory
 
 interface MyInterface {
     fun doSomething()
 
     companion object {
         @InversionDef
-        val factory: InversionFactory<MyInterface> = Inversion.factory(MyInterface::class)
+        val factory = Inversion.factory(MyInterface::class)
     }
 }
 

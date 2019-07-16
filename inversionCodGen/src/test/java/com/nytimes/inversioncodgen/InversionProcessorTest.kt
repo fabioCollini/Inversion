@@ -20,7 +20,7 @@ class InversionProcessorTest {
                 
                     companion object {
                         @InversionDef
-                        val factory: InversionFactory<MyInterface> = Inversion.factory(MyInterface::class)
+                        val factory: () -> MyInterface = Inversion.factory(MyInterface::class)
                     }
                 }
         """.trimIndent()
@@ -33,14 +33,13 @@ class InversionProcessorTest {
                 package com.nytimes.libinterface
                 
                 import com.nytimes.inversion.Inversion
-                import com.nytimes.inversion.InversionFactory
                 import kotlin.jvm.JvmName
                 import kotlin.reflect.KClass
                 
-                interface MyInterfaceFactory : InversionFactory<MyInterface>
+                interface MyInterfaceFactory : () -> MyInterface
                 
                 @JvmName("factory_com_nytimes_libinterface_MyInterface")
-                fun Inversion.factory(c: KClass<MyInterface>): InversionFactory<MyInterface> =
+                fun Inversion.factory(c: KClass<MyInterface>): () -> MyInterface =
                     loadSingleService<MyInterfaceFactory>()
 
         """.trimIndent()

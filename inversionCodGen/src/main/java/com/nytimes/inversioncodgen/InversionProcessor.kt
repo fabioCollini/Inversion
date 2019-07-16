@@ -76,11 +76,12 @@ class InversionProcessor : AbstractProcessor() {
         val pack = getPackageName(element)
         val returnType = element.asType().asTypeName()
         val arg = (returnType as ParameterizedTypeName).typeArguments[0] as ClassName
+        val realReturnType = LambdaTypeName.get(returnType = arg)
         val factoryInterface = ClassName(arg.packageName, arg.simpleName + "Factory")
         val file = FileSpec.builder(pack, "MyFactory")
             .addType(
                 TypeSpec.interfaceBuilder(factoryInterface)
-                    .addSuperinterface(returnType)
+                    .addSuperinterface(realReturnType)
                     .build()
             )
             .addFunction(
@@ -92,7 +93,7 @@ class InversionProcessor : AbstractProcessor() {
                     )
                     .receiver(Inversion::class)
                     .addParameter("c", KClass::class.asClassName().parameterizedBy(arg))
-                    .returns(returnType)
+                    .returns(realReturnType)
                     .addStatement("return loadSingleService<%T>()", factoryInterface)
                     .build()
             )
