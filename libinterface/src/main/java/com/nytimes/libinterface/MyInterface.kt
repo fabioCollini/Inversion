@@ -2,9 +2,10 @@ package com.nytimes.libinterface
 
 import com.nytimes.inversion.Inversion
 import com.nytimes.inversion.InversionDef
+import com.nytimes.inversion.factory
 
 interface MyInterface {
-    fun doSomething()
+    fun doSomething(): String
 
     companion object {
         @InversionDef

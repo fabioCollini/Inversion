@@ -4,9 +4,7 @@ import com.nytimes.inversion.InversionImpl
 import com.nytimes.libinterface.MyInterface
 
 class MyImpl : MyInterface {
-    override fun doSomething() {
-        println("Hello world!")
-    }
+    override fun doSomething(): String = "Hello world!!!"
 }
 
 @InversionImpl

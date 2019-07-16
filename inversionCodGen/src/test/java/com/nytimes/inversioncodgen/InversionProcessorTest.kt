@@ -20,30 +20,41 @@ class InversionProcessorTest {
                 
                     companion object {
                         @InversionDef
-                        val factory: () -> MyInterface = Inversion.factory(MyInterface::class)
+                        val factory = Inversion.factory(MyInterface::class)
                     }
                 }
-        """.trimIndent()
+                """.trimIndent()
             )
             .compile()
             .succeededWithoutWarnings()
-            .generatedFile("com/nytimes/libinterface/MyFactory.kt")
-            .hasSourceEquivalentTo(
-                """
-                package com.nytimes.libinterface
-                
-                import com.nytimes.inversion.Inversion
-                import kotlin.jvm.JvmName
-                import kotlin.reflect.KClass
-                
-                interface MyInterfaceFactory : () -> MyInterface
-                
-                @JvmName("factory_com_nytimes_libinterface_MyInterface")
-                fun Inversion.factory(c: KClass<MyInterface>): () -> MyInterface =
-                    loadSingleService<MyInterfaceFactory>()
+            .apply {
+                generatedFile("com/nytimes/libinterface/MyFactory.kt")
+                    .hasSourceEquivalentTo(
+                        """
+                        package com.nytimes.libinterface
+                        
+                        interface MyInterfaceFactory : () -> MyInterface
+        
+                        """.trimIndent()
+                    )
 
-        """.trimIndent()
-            )
+                generatedFile("com/nytimes/inversion/Inversion_ext_MyFactory.kt")
+                    .hasSourceEquivalentTo(
+                        """
+                        package com.nytimes.inversion
+                        
+                        import com.nytimes.libinterface.MyInterface
+                        import com.nytimes.libinterface.MyInterfaceFactory
+                        import kotlin.jvm.JvmName
+                        import kotlin.reflect.KClass
+                        
+                        @JvmName("factory_com_nytimes_libinterface_MyInterface")
+                        fun Inversion.factory(c: KClass<MyInterface>): () -> MyInterface =
+                            loadSingleService<MyInterfaceFactory>()
+
+                        """.trimIndent()
+                    )
+            }
     }
 
     @Test
@@ -51,7 +62,7 @@ class InversionProcessorTest {
         kotlinc()
             .withProcessors(InversionProcessor())
             .addKotlin(
-                "com/nytimes/libimpl/MyInterface.kt", """
+                "com/nytimes/libinterface/MyInterface.kt", """
                 package com.nytimes.libinterface
 
                 interface MyInterface {
@@ -93,6 +104,116 @@ class InversionProcessorTest {
             }
             
         """.trimIndent()
+            )
+    }
+
+    @Test
+    fun generateDefWithParams() {
+        kotlinc()
+            .withProcessors(InversionProcessor())
+            .addKotlin(
+                "com/nytimes/libimpl/MyInterface.kt", """
+                package com.nytimes.libinterface
+
+                import com.nytimes.inversion.*
+                import kotlin.reflect.KClass
+                
+                class MyClass
+                
+                interface MyInterface {
+                    fun doSomething()
+                
+                    companion object {
+                        @InversionDef
+                        val factory: (MyClass) -> MyInterface = Inversion.factory(MyInterface::class)
+                    }
+                }
+        """.trimIndent()
+            )
+            .compile()
+            .succeededWithoutWarnings()
+            .apply {
+                generatedFile("com/nytimes/libinterface/MyFactory.kt")
+                    .hasSourceEquivalentTo(
+                        """
+                        package com.nytimes.libinterface
+                        
+                        interface MyInterfaceFactory : (MyClass) -> MyInterface
+        
+                        """.trimIndent()
+                    )
+
+                generatedFile("com/nytimes/inversion/Inversion_ext_MyFactory.kt")
+                    .hasSourceEquivalentTo(
+                        """
+                        package com.nytimes.inversion
+                        
+                        import com.nytimes.libinterface.MyClass
+                        import com.nytimes.libinterface.MyInterface
+                        import com.nytimes.libinterface.MyInterfaceFactory
+                        import kotlin.jvm.JvmName
+                        import kotlin.reflect.KClass
+                        
+                        @JvmName("factory_com_nytimes_libinterface_MyInterface")
+                        fun Inversion.factory(c: KClass<MyInterface>): (MyClass) -> MyInterface =
+                            loadSingleService<MyInterfaceFactory>()
+        
+                        """.trimIndent()
+                    )
+            }
+    }
+
+    @Test
+    fun generateImplWitParams() {
+        kotlinc()
+            .withProcessors(InversionProcessor())
+            .addKotlin(
+                "com/nytimes/libinterface/MyInterface.kt", """
+                package com.nytimes.libinterface
+
+                class MyClass
+                
+                interface MyInterface {
+                    fun doSomething()
+                }
+                """.trimIndent()
+            )
+            .addKotlin(
+                "com/nytimes/libimpl/MyImpl.kt", """
+                package com.nytimes.libimpl
+
+                import com.nytimes.inversion.InversionImpl
+                import com.nytimes.libinterface.MyClass
+                import com.nytimes.libinterface.MyInterface
+ 
+                class MyImpl : MyInterface {
+                    override fun doSomething() {
+                        println("Hello world!")
+                    }
+                }
+                
+                @InversionImpl
+                fun provideImpl(param: MyClass): MyInterface = MyImpl()
+        """.trimIndent()
+            )
+            .compile()
+            .succeededWithoutWarnings()
+            .generatedFile("com/nytimes/libimpl/MyFactoryImpl.kt")
+            .hasSourceEquivalentTo(
+                """
+                package com.nytimes.libimpl
+    
+                import com.google.auto.service.AutoService
+                import com.nytimes.libinterface.MyClass
+                import com.nytimes.libinterface.MyInterface
+                import com.nytimes.libinterface.MyInterfaceFactory
+                
+                @AutoService(MyInterfaceFactory::class)
+                class provideImpl__factory : MyInterfaceFactory {
+                  override fun invoke(param: MyClass): MyInterface = provideImpl(param)
+                }
+                
+                """.trimIndent()
             )
     }
 }

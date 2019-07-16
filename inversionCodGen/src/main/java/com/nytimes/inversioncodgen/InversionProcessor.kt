@@ -49,7 +49,7 @@ class InversionProcessor : AbstractProcessor() {
         val pack = getPackageName(element)
         val returnType = element.returnType.asTypeName() as ClassName
         val factoryInterface = ClassName(returnType.packageName, returnType.simpleName + "Factory")
-        val file = FileSpec.builder(pack, "MyFactoryImpl")
+        FileSpec.builder(pack, "MyFactoryImpl")
             .addType(
                 TypeSpec.classBuilder("${methodName}__factory")
                     .addSuperinterface(factoryInterface)
@@ -62,44 +62,61 @@ class InversionProcessor : AbstractProcessor() {
                         FunSpec.builder("invoke")
                             .addModifiers(KModifier.OVERRIDE)
                             .returns(element.returnType.asTypeName())
-                            .addStatement("return ${element.simpleName}()")
+                            .apply {
+                                element.parameters.forEach {
+                                    addParameter(
+                                        it.simpleName.toString(),
+                                        (it as VariableElement).asType().asTypeName()
+                                    )
+                                }
+                            }
+                            .addStatement("return ${element.simpleName}(%L)",
+                                element.parameters.joinToString { it.simpleName.toString() })
                             .build()
                     )
                     .build()
             )
             .build()
-
-        file.writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
+            .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
     }
 
     private fun generateDefClass(element: VariableElement) {
         val pack = getPackageName(element)
-        val returnType = element.asType().asTypeName()
-        val arg = (returnType as ParameterizedTypeName).typeArguments[0] as ClassName
-        val realReturnType = LambdaTypeName.get(returnType = arg)
-        val factoryInterface = ClassName(arg.packageName, arg.simpleName + "Factory")
-        val file = FileSpec.builder(pack, "MyFactory")
+        val factoryType = element.asType().asTypeName() as ParameterizedTypeName
+        val returnType = factoryType.typeArguments.last() as ClassName
+        val realFactoryType = LambdaTypeName.get(
+            returnType = returnType,
+            parameters = *factoryType.typeArguments.subList(
+                0,
+                factoryType.typeArguments.size - 1
+            ).toTypedArray()
+        )
+        val factoryInterface = ClassName(returnType.packageName, returnType.simpleName + "Factory")
+        FileSpec.builder(pack, "MyFactory")
             .addType(
                 TypeSpec.interfaceBuilder(factoryInterface)
-                    .addSuperinterface(realReturnType)
+                    .addSuperinterface(realFactoryType)
                     .build()
             )
+            .build()
+            .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
+
+        FileSpec.builder("com.nytimes.inversion", "Inversion_ext_MyFactory")
             .addFunction(
                 FunSpec.builder("factory")
                     .addAnnotation(
                         AnnotationSpec.builder(JvmName::class)
-                            .addMember("\"factory_${arg.toString().replace('.', '_')}\"")
+                            .addMember("\"factory_${returnType.toString().replace('.', '_')}\"")
                             .build()
                     )
                     .receiver(Inversion::class)
-                    .addParameter("c", KClass::class.asClassName().parameterizedBy(arg))
-                    .returns(realReturnType)
+                    .addParameter("c", KClass::class.asClassName().parameterizedBy(returnType))
+                    .returns(realFactoryType)
                     .addStatement("return loadSingleService<%T>()", factoryInterface)
                     .build()
             )
             .build()
-
-        file.writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
+            .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
     }
 
     companion object {
