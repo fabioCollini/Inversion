@@ -9,12 +9,25 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.io.File
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
-import javax.lang.model.element.Element
-import javax.lang.model.element.ExecutableElement
-import javax.lang.model.element.TypeElement
-import javax.lang.model.element.VariableElement
+import javax.lang.model.element.*
 import kotlin.reflect.KClass
 
+class ImplElement(
+    element: ExecutableElement,
+    val packageName: String
+) {
+    val methodName = element.simpleName.toString()
+    val returnType = element.returnType.asTypeName() as ClassName
+    val parameters: List<VariableElement> = element.parameters
+    val simpleName: Name = element.simpleName
+}
+
+class DefElement(
+    element: VariableElement,
+    val packageName: String
+) {
+    val factoryType = element.asType().asTypeName() as ParameterizedTypeName
+}
 
 @AutoService(Processor::class)
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
@@ -30,28 +43,32 @@ class InversionProcessor : AbstractProcessor() {
         set: MutableSet<out TypeElement>?,
         roundEnvironment: RoundEnvironment?
     ): Boolean {
-        roundEnvironment?.getElementsAnnotatedWith(InversionImpl::class.java)
+        val impls = roundEnvironment?.getElementsAnnotatedWith(InversionImpl::class.java)
             .orEmpty()
             .filterIsInstance<ExecutableElement>()
-            .forEach { generateImpl(it) }
-        roundEnvironment?.getElementsAnnotatedWith(InversionDef::class.java)
+            .map { ImplElement(it, getPackageName(it)) }
+
+        impls.forEach { generateImpl(it) }
+        
+        val defs = roundEnvironment?.getElementsAnnotatedWith(InversionDef::class.java)
             .orEmpty()
             .filterIsInstance<VariableElement>()
-            .forEach { generateDefClass(it) }
+            .map { DefElement(it, getPackageName(it)) }
+        
+        defs.forEach { generateDefClass(it) }
+        
         return true
     }
 
     private fun getPackageName(it: Element) =
         processingEnv.elementUtils.getPackageOf(it).toString()
 
-    private fun generateImpl(element: ExecutableElement) {
-        val methodName = element.simpleName.toString()
-        val pack = getPackageName(element)
-        val returnType = element.returnType.asTypeName() as ClassName
+    private fun generateImpl(element: ImplElement) {
+        val returnType = element.returnType
         val factoryInterface = ClassName(returnType.packageName, returnType.simpleName + "Factory")
-        FileSpec.builder(pack, "MyFactoryImpl")
+        FileSpec.builder(element.packageName, "MyFactoryImpl")
             .addType(
-                TypeSpec.classBuilder("${methodName}__factory")
+                TypeSpec.classBuilder("${element.methodName}__factory")
                     .addSuperinterface(factoryInterface)
                     .addAnnotation(
                         AnnotationSpec.builder(AutoService::class)
@@ -61,12 +78,12 @@ class InversionProcessor : AbstractProcessor() {
                     .addFunction(
                         FunSpec.builder("invoke")
                             .addModifiers(KModifier.OVERRIDE)
-                            .returns(element.returnType.asTypeName())
+                            .returns(element.returnType)
                             .apply {
                                 element.parameters.forEach {
                                     addParameter(
                                         it.simpleName.toString(),
-                                        (it as VariableElement).asType().asTypeName()
+                                        it.asType().asTypeName()
                                     )
                                 }
                             }
@@ -80,10 +97,8 @@ class InversionProcessor : AbstractProcessor() {
             .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
     }
 
-    private fun generateDefClass(element: VariableElement) {
-        val pack = getPackageName(element)
-        val factoryType = element.asType().asTypeName() as ParameterizedTypeName
-        val args = factoryType.typeArguments
+    private fun generateDefClass(element: DefElement) {
+        val args = element.factoryType.typeArguments
         val returnType = args.last() as ClassName
         val realFactoryType = LambdaTypeName.get(
             returnType = returnType,
@@ -93,7 +108,7 @@ class InversionProcessor : AbstractProcessor() {
             ).toTypedArray()
         )
         val factoryInterface = ClassName(returnType.packageName, returnType.simpleName + "Factory")
-        FileSpec.builder(pack, "MyFactory")
+        FileSpec.builder(element.packageName, "MyFactory")
             .addType(
                 TypeSpec.interfaceBuilder(factoryInterface)
                     .addSuperinterface(realFactoryType)
