@@ -5,14 +5,16 @@ import kotlin.reflect.KClass
 
 object Inversion {
 
-    inline fun <reified T> loadSingleService(): T {
-        val provider = ServiceLoader.load(T::class.java, T::class.java.classLoader)
+    inline fun <reified T> loadSingleService(): T =
+        loadSingleService(T::class.java)
+
+    fun <T> loadSingleService(c: Class<T>): T {
+        val provider = ServiceLoader.load(c, c.classLoader)
         return provider.iterator().next()
     }
 
-    inline fun <reified T> loadServiceList(): List<T> {
-        return loadServiceList(T::class.java)
-    }
+    inline fun <reified T> loadServiceList(): List<T> =
+        loadServiceList(T::class.java)
 
     fun <T> loadServiceList(c: Class<T>): List<T> {
         return try {
@@ -41,6 +43,14 @@ fun <T : Any> Inversion.factory(c: KClass<T>): () -> T = TODO()
 
 @JvmName("factory1")
 fun <T : Any, P> Inversion.factory1(c: KClass<T>): (P) -> T = TODO()
+
+@JvmName("factory1_invoke")
+fun <T : Any> Inversion.of(c: KClass<T>): InversionFactory<T> = TODO()
+
+class InversionFactory<T : Any>(private val c: KClass<*>) {
+    fun factory(): () -> T = Inversion.loadSingleService((c as KClass<() -> T>).java)
+    fun <P> factory(): (P) -> T = Inversion.loadSingleService((c as KClass<(P) -> T>).java)
+}
 
 interface InversionValidator {
     fun getFactoryClass(): KClass<*>

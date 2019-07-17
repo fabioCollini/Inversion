@@ -182,7 +182,7 @@ class InversionProcessor : AbstractProcessor() {
 
         FileSpec.builder("com.nytimes.inversion", "Inversion_ext_MyFactory")
             .addFunction(
-                FunSpec.builder("factory" + if (args.size > 1) args.size - 1 else "")
+                FunSpec.builder("of")
                     .addAnnotation(
                         AnnotationSpec.builder(JvmName::class)
                             .addMember("\"factory_${returnType.toString().replace('.', '_')}\"")
@@ -190,8 +190,7 @@ class InversionProcessor : AbstractProcessor() {
                     )
                     .receiver(Inversion::class)
                     .addParameter("c", KClass::class.asClassName().parameterizedBy(returnType))
-                    .returns(realFactoryType)
-                    .addStatement("return loadSingleService<%T>()", factoryInterface)
+                    .addStatement("return InversionFactory<%T>(%T::class)", returnType, factoryInterface)
                     .build()
             )
             .build()

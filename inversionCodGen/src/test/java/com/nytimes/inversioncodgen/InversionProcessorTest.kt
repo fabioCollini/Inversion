@@ -12,15 +12,16 @@ class InversionProcessorTest {
                 "com/nytimes/libimpl/MyInterface.kt", """
                 package com.nytimes.libinterface
 
-                import com.nytimes.inversion.*
-                import kotlin.reflect.KClass
+                import com.nytimes.inversion.Inversion
+                import com.nytimes.inversion.InversionDef
+                import com.nytimes.inversion.of
                 
                 interface MyInterface {
                     fun doSomething()
                 
                     companion object {
                         @InversionDef
-                        val factory = Inversion.factory(MyInterface::class)
+                        val factory = Inversion.of(MyInterface::class).factory()
                     }
                 }
                 """.trimIndent()
@@ -55,8 +56,7 @@ class InversionProcessorTest {
                         import kotlin.reflect.KClass
                         
                         @JvmName("factory_com_nytimes_libinterface_MyInterface")
-                        fun Inversion.factory(c: KClass<MyInterface>): () -> MyInterface =
-                            loadSingleService<MyInterfaceFactory>()
+                        fun Inversion.of(c: KClass<MyInterface>) = InversionFactory<MyInterface>(MyInterfaceFactory::class)
 
                         """.trimIndent()
                     )
@@ -126,7 +126,7 @@ class InversionProcessorTest {
 
                     companion object {
                         @InversionDef
-                        val factory = Inversion.factory(MyInterface::class)
+                        val factory = Inversion.of(MyInterface::class).factory()
                     }
                 }
                 """.trimIndent()
@@ -170,7 +170,7 @@ class InversionProcessorTest {
                 
                     companion object {
                         @InversionDef
-                        val factory = Inversion.factory(MyInterface::class)
+                        val factory = Inversion.of(MyInterface::class).factory()
                     }
                 }
                 """.trimIndent()
@@ -198,7 +198,7 @@ class InversionProcessorTest {
                 
                     companion object {
                         @InversionDef
-                        val factory: (MyClass) -> MyInterface = Inversion.factory1(MyInterface::class)
+                        val factory = Inversion.of(MyInterface::class).factory<MyClass>
                     }
                 }
         """.trimIndent()
@@ -227,15 +227,13 @@ class InversionProcessorTest {
                         """
                         package com.nytimes.inversion
                         
-                        import com.nytimes.libinterface.MyClass
                         import com.nytimes.libinterface.MyInterface
                         import com.nytimes.libinterface.MyInterfaceFactory
                         import kotlin.jvm.JvmName
                         import kotlin.reflect.KClass
                         
                         @JvmName("factory_com_nytimes_libinterface_MyInterface")
-                        fun Inversion.factory1(c: KClass<MyInterface>): (MyClass) -> MyInterface =
-                            loadSingleService<MyInterfaceFactory>()
+                        fun Inversion.of(c: KClass<MyInterface>) = InversionFactory<MyInterface>(MyInterfaceFactory::class)
         
                         """.trimIndent()
                     )
