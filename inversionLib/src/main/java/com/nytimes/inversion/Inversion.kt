@@ -39,11 +39,6 @@ annotation class InversionImpl
 
 annotation class InversionValidate
 
-fun <T : Any> Inversion.factory(c: KClass<T>): () -> T = TODO()
-
-@JvmName("factory1")
-fun <T : Any, P> Inversion.factory1(c: KClass<T>): (P) -> T = TODO()
-
 @JvmName("factory1_invoke")
 fun <T : Any> Inversion.of(c: KClass<T>): InversionFactory<T> = TODO()
 
