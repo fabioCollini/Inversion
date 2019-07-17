@@ -1,7 +1,7 @@
 # Inversion
 
 Inversion simplifies the `ServiceLoader` usage to retrieve all the implementations of a certain interface.
-Using Inversion it's easy to implement the dependency inversion in a multi module project.
+Using Inversion it's easy to use the dependency inversion in a multi module project.
 
 ## Basic example
 
