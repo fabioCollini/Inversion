@@ -12,9 +12,3 @@ class MyImpl : MyInterface {
 
 @InversionImpl
 fun provideImpl(param: Container): MyInterface = param.getOrCreate { MyImpl() }
-
-
-//@AutoService(MyInterfaceFactory::class)
-//class MyFactoryImpl2 : MyInterfaceFactory {
-//    override fun invoke(): MyInterface = provideImpl()
-//}

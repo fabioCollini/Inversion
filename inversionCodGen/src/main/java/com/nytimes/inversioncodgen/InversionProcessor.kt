@@ -1,15 +1,14 @@
 package com.nytimes.inversioncodgen
 
 import com.google.auto.service.AutoService
-import com.nytimes.inversion.Inversion
-import com.nytimes.inversion.InversionDef
-import com.nytimes.inversion.InversionImpl
+import com.nytimes.inversion.*
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.io.File
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.*
+import javax.tools.Diagnostic
 import kotlin.reflect.KClass
 
 class ImplElement(
@@ -35,7 +34,11 @@ class DefElement(
 class InversionProcessor : AbstractProcessor() {
 
     override fun getSupportedAnnotationTypes() =
-        mutableSetOf(InversionImpl::class.java.name, InversionDef::class.java.name)
+        mutableSetOf(
+            InversionImpl::class.java.name,
+            InversionDef::class.java.name,
+            InversionValidate::class.java.name
+        )
 
     override fun getSupportedSourceVersion(): SourceVersion = SourceVersion.latest()
 
@@ -49,15 +52,30 @@ class InversionProcessor : AbstractProcessor() {
             .map { ImplElement(it, getPackageName(it)) }
 
         impls.forEach { generateImpl(it) }
-        
+
         val defs = roundEnvironment?.getElementsAnnotatedWith(InversionDef::class.java)
             .orEmpty()
             .filterIsInstance<VariableElement>()
             .map { DefElement(it, getPackageName(it)) }
-        
+
         defs.forEach { generateDefClass(it) }
-        
+
+        roundEnvironment?.getElementsAnnotatedWith(InversionValidate::class.java)
+            .orEmpty()
+            .firstOrNull()
+            ?.let { element -> validateAllDependencies(element) }
+
         return true
+    }
+
+    private fun validateAllDependencies(element: Element) {
+        Inversion.loadServiceList<InversionValidator>().forEach {
+            val factoryClass = it.getFactoryClass()
+            val implementations = Inversion.loadServiceList(factoryClass.java)
+            if (implementations.isEmpty()) {
+                error("Implementation not found for $factoryClass", element, null)
+            }
+        }
     }
 
     private fun getPackageName(it: Element) =
@@ -114,6 +132,27 @@ class InversionProcessor : AbstractProcessor() {
                     .addSuperinterface(realFactoryType)
                     .build()
             )
+            .addType(
+                TypeSpec.classBuilder(
+                    ClassName(
+                        returnType.packageName,
+                        returnType.simpleName + "FactoryValidator"
+                    )
+                )
+                    .addAnnotation(
+                        AnnotationSpec.builder(AutoService::class)
+                            .addMember("InversionValidator::class")
+                            .build()
+                    )
+                    .addSuperinterface(InversionValidator::class)
+                    .addFunction(
+                        FunSpec.builder("getFactoryClass")
+                            .addModifiers(KModifier.OVERRIDE)
+                            .addStatement("return %T::class", factoryInterface)
+                            .build()
+                    )
+                    .build()
+            )
             .build()
             .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
 
@@ -133,6 +172,14 @@ class InversionProcessor : AbstractProcessor() {
             )
             .build()
             .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
+    }
+
+    private fun log(msg: String) {
+        processingEnv.messager.printMessage(Diagnostic.Kind.WARNING, msg)
+    }
+
+    private fun error(msg: String, element: Element, annotation: AnnotationMirror?) {
+        processingEnv.messager.printMessage(Diagnostic.Kind.ERROR, msg, element, annotation)
     }
 
     companion object {

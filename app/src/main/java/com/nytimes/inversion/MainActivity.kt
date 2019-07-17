@@ -15,6 +15,7 @@ object MyContainer : Container {
             last as V
 }
 
+@InversionValidate
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {

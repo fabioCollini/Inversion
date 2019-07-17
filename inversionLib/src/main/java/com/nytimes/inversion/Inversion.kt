@@ -11,13 +11,21 @@ object Inversion {
     }
 
     inline fun <reified T> loadServiceList(): List<T> {
-        val provider = ServiceLoader.load(T::class.java, T::class.java.classLoader)
-        val ret = mutableListOf<T>()
-        val iterator = provider.iterator()
-        while (iterator.hasNext()) {
-            ret.add(iterator.next())
+        return loadServiceList(T::class.java)
+    }
+
+    fun <T> loadServiceList(c: Class<T>): List<T> {
+        return try {
+            val provider = ServiceLoader.load(c, c.classLoader)
+            val ret = mutableListOf<T>()
+            val iterator = provider.iterator()
+            while (iterator.hasNext()) {
+                ret.add(iterator.next())
+            }
+            ret
+        } catch (e: ServiceConfigurationError) {
+            emptyList()
         }
-        return ret
     }
 }
 
@@ -27,18 +35,13 @@ annotation class InversionDef
 @Target(AnnotationTarget.FUNCTION)
 annotation class InversionImpl
 
-//fun <T : Any> Inversion.get(c: KClass<T>): T = TODO()
-//
-//fun Inversion.get(c: KClass<MyInterface>): MyInterface =
-//    loadSingleService<MyInterfaceFactory>().create()
-//
-//fun <T : Any> Inversion.getList(c: KClass<T>): List<T> = TODO()
-//
-//@JvmName("getList_MyInterface")
-//fun Inversion.getList(c: KClass<MyInterface>): List<MyInterface> =
-//    loadServiceList<MyInterfaceFactory>().map { it.create() }
+annotation class InversionValidate
 
 fun <T : Any> Inversion.factory(c: KClass<T>): () -> T = TODO()
 
 @JvmName("factory1")
 fun <T : Any, P> Inversion.factory1(c: KClass<T>): (P) -> T = TODO()
+
+interface InversionValidator {
+    fun getFactoryClass(): KClass<*>
+}
