@@ -5,9 +5,9 @@ Using Inversion it's easy to implement the dependency inversion in a multi modul
 
 ## Basic example
 
-A first module defines an interface and a factory field to create the real implementation of the interface:
+A first module defines an interface and a factory field (annotated with `InversionDef`) to create the real implementation of the interface:
 
-```
+```kotlin
 interface MyInterface {
     fun doSomething(): String
 
@@ -21,9 +21,9 @@ interface MyInterface {
 The `factory` field is a `() -> MyInterface` lambda so can be used to create a new instance. The first module
 doesn't contain any real implementation of `MyInterface`.
 
-A second module defines the real implementation and an `InversionImpl` method to create it:
+A second module defines the real implementation and an `InversionImpl` annotated method to create it:
 
-```
+```kotlin
 class MyImpl : MyInterface {
     override fun doSomething() = "Hello world!"
 }
@@ -33,9 +33,9 @@ fun provideImpl(): MyInterface = MyImpl()
 ```
 
 And that's all! Now from a third module (for example an Android application) we can retrieve the real
-implementation using the factory:
+implementation using the `factory`:
 
-```
+```kotlin
 @InversionValidate
 class MainActivity : AppCompatActivity() {
 
