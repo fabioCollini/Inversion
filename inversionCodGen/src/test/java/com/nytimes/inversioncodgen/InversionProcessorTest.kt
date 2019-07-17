@@ -33,7 +33,13 @@ class InversionProcessorTest {
                         """
                         package com.nytimes.libinterface
                         
+                        import com.nytimes.inversion.InversionValidator
+                        
                         interface MyInterfaceFactory : () -> MyInterface
+                        
+                        class MyInterfaceFactoryValidator : InversionValidator {
+                          override fun getFactoryClass() = MyInterfaceFactory::class
+                        }
         
                         """.trimIndent()
                     )
@@ -94,17 +100,84 @@ class InversionProcessorTest {
                 """
             package com.nytimes.libimpl
 
-            import com.google.auto.service.AutoService
             import com.nytimes.libinterface.MyInterface
             import com.nytimes.libinterface.MyInterfaceFactory
             
-            @AutoService(MyInterfaceFactory::class)
             class provideImpl__factory : MyInterfaceFactory {
               override fun invoke(): MyInterface = provideImpl()
             }
             
         """.trimIndent()
             )
+    }
+
+    @Test
+    fun noErrorsWhenImplIsAvailable() {
+        kotlinc()
+            .withProcessors(InversionProcessor())
+            .addKotlin(
+                "com/nytimes/libinterface/MyInterface.kt", """
+                package com.nytimes.libinterface
+
+                import com.nytimes.inversion.*
+
+                interface MyInterface {
+                    fun doSomething()
+
+                    companion object {
+                        @InversionDef
+                        val factory = Inversion.factory(MyInterface::class)
+                    }
+                }
+                """.trimIndent()
+            )
+            .addKotlin(
+                "com/nytimes/libimpl/MyImpl.kt", """
+                package com.nytimes.libimpl
+
+                import com.nytimes.inversion.*
+                import com.nytimes.libinterface.MyInterface
+ 
+                @InversionValidate
+                class MyImpl : MyInterface {
+                    override fun doSomething() {
+                        println("Hello world!")
+                    }
+                }
+                
+                @InversionImpl
+                fun provideImpl(): MyInterface = MyImpl()
+                """.trimIndent()
+            )
+            .compile()
+            .succeededWithoutWarnings()
+    }
+
+    @Test
+    fun errorWhenImplementationIsNotAvailable() {
+        kotlinc()
+            .withProcessors(InversionProcessor())
+            .addKotlin(
+                "com/nytimes/libimpl/MyInterface.kt", """
+                package com.nytimes.libinterface
+
+                import com.nytimes.inversion.*
+                import kotlin.reflect.KClass
+                
+                @InversionValidate
+                interface MyInterface {
+                    fun doSomething()
+                
+                    companion object {
+                        @InversionDef
+                        val factory = Inversion.factory(MyInterface::class)
+                    }
+                }
+                """.trimIndent()
+            )
+            .compile()
+            .failed()
+            .withErrorContaining("Implementation not found for com.nytimes.libinterface.MyInterfaceFactory")
     }
 
     @Test
@@ -138,8 +211,14 @@ class InversionProcessorTest {
                         """
                         package com.nytimes.libinterface
                         
+                        import com.nytimes.inversion.InversionValidator
+                        
                         interface MyInterfaceFactory : (MyClass) -> MyInterface
         
+                        class MyInterfaceFactoryValidator : InversionValidator {
+                          override fun getFactoryClass() = MyInterfaceFactory::class
+                        }
+
                         """.trimIndent()
                     )
 
@@ -203,12 +282,10 @@ class InversionProcessorTest {
                 """
                 package com.nytimes.libimpl
     
-                import com.google.auto.service.AutoService
                 import com.nytimes.libinterface.MyClass
                 import com.nytimes.libinterface.MyInterface
                 import com.nytimes.libinterface.MyInterfaceFactory
                 
-                @AutoService(MyInterfaceFactory::class)
                 class provideImpl__factory : MyInterfaceFactory {
                   override fun invoke(param: MyClass): MyInterface = provideImpl(param)
                 }

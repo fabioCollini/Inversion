@@ -22,6 +22,7 @@ class ImplElement(
     val returnType = element.returnType.asTypeName() as ClassName
     val parameters: List<VariableElement> = element.parameters
     val simpleName: Name = element.simpleName
+    val factoryInterface = ClassName(returnType.packageName, returnType.simpleName + "Factory")
 }
 
 class DefElement(
@@ -29,6 +30,8 @@ class DefElement(
     val packageName: String
 ) {
     val factoryType = element.asType().asTypeName() as ParameterizedTypeName
+    val returnType = factoryType.typeArguments.last() as ClassName
+    val factoryInterface = ClassName(returnType.packageName, returnType.simpleName + "Factory")
 }
 
 @AutoService(Processor::class)
@@ -47,46 +50,62 @@ class InversionProcessor : AbstractProcessor() {
 
     override fun process(
         set: MutableSet<out TypeElement>?,
-        roundEnvironment: RoundEnvironment?
+        roundEnvironment: RoundEnvironment
     ): Boolean {
-        val impls = roundEnvironment?.getElementsAnnotatedWith(InversionImpl::class.java)
-            .orEmpty()
+        val impls = roundEnvironment.getElementsAnnotatedWith(InversionImpl::class.java)
             .filterIsInstance<ExecutableElement>()
             .map { ImplElement(it, getPackageName(it)) }
 
         impls.forEach { generateImpl(it) }
 
-        val defs = roundEnvironment?.getElementsAnnotatedWith(InversionDef::class.java)
-            .orEmpty()
+        val defs = roundEnvironment.getElementsAnnotatedWith(InversionDef::class.java)
             .filterIsInstance<VariableElement>()
             .map { DefElement(it, getPackageName(it)) }
 
         defs.forEach { generateDefClass(it) }
 
-        roundEnvironment?.getElementsAnnotatedWith(InversionValidate::class.java)
-            .orEmpty()
+        roundEnvironment.getElementsAnnotatedWith(InversionValidate::class.java)
             .firstOrNull()
-            ?.let { element -> validateAllDependencies(element) }
+            ?.let { element ->
+                log("validate")
+                validateAllDependencies(element, defs, impls)
+            }
 
         return true
     }
 
-    private fun validateAllDependencies(element: Element) {
-        Inversion.loadServiceList<InversionValidator>().forEach {
-            val factoryClass = it.getFactoryClass()
-            val implementations = Inversion.loadServiceList(factoryClass.java)
-            if (implementations.isEmpty()) {
-                error("Implementation not found for $factoryClass", element, null)
+    private fun validateAllDependencies(
+        element: Element,
+        defs: List<DefElement>,
+        impls: List<ImplElement>
+    ) {
+        defs.map { it.factoryInterface }
+            .map { it.canonicalName }
+            .forEach { factoryClass ->
+                val implementations = readImplementationsFromRes(getResourceFile(factoryClass)) +
+                        impls.filter { it.factoryInterface.canonicalName == factoryClass }
+                if (implementations.isEmpty()) {
+                    error("Implementation not found for $factoryClass", element, null)
+                }
             }
-        }
+
+        Inversion.loadServiceList<InversionValidator>()
+            .map { it.getFactoryClass() }
+            .forEach { factoryClass ->
+                val implementations = Inversion.loadServiceList(factoryClass.java) +
+                        readImplementationsFromRes(getResourceFile(factoryClass.java.canonicalName)) +
+                        impls.filter { it.factoryInterface.canonicalName == factoryClass.java.canonicalName }
+                if (implementations.isEmpty()) {
+                    error("Implementation not found for $factoryClass", element, null)
+                }
+            }
     }
 
     private fun getPackageName(it: Element) =
         processingEnv.elementUtils.getPackageOf(it).toString()
 
     private fun generateImpl(element: ImplElement) {
-        val returnType = element.returnType
-        val factoryInterface = ClassName(returnType.packageName, returnType.simpleName + "Factory")
+        val factoryInterface = element.factoryInterface
         val factoryClassName = "${element.methodName}__factory"
         FileSpec.builder(element.packageName, "MyFactoryImpl")
             .addType(
@@ -121,7 +140,7 @@ class InversionProcessor : AbstractProcessor() {
 
     private fun generateDefClass(element: DefElement) {
         val args = element.factoryType.typeArguments
-        val returnType = args.last() as ClassName
+        val returnType = element.returnType
         val realFactoryType = LambdaTypeName.get(
             returnType = returnType,
             parameters = *args.subList(
@@ -129,7 +148,7 @@ class InversionProcessor : AbstractProcessor() {
                 args.size - 1
             ).toTypedArray()
         )
-        val factoryInterface = ClassName(returnType.packageName, returnType.simpleName + "Factory")
+        val factoryInterface = element.factoryInterface
         val validatorClass = ClassName(
             returnType.packageName,
             returnType.simpleName + "FactoryValidator"
@@ -184,33 +203,10 @@ class InversionProcessor : AbstractProcessor() {
      * https://github.com/google/auto/blob/master/service/processor/src/main/java/com/google/auto/service/processor/AutoServiceProcessor.java
      */
     private fun generateConfigFiles(providerInterface: String, newService: String) {
-        val filer = processingEnv.filer
-
-        val resourceFile = "META-INF/services/$providerInterface"
+        val resourceFile = getResourceFile(providerInterface)
         log("Working on resource file: $resourceFile")
         try {
-            val allServices = mutableSetOf<String>()
-            try {
-                // would like to be able to print the full path
-                // before we attempt to get the resource in case the behavior
-                // of filer.getResource does change to match the spec, but there's
-                // no good way to resolve CLASS_OUTPUT without first getting a resource.
-                val existingFile = filer.getResource(
-                    StandardLocation.CLASS_OUTPUT, "",
-                    resourceFile
-                )
-                log("Looking for existing resource file at " + existingFile.toUri())
-                val oldServices = ServicesFiles.readServiceFile(existingFile.openInputStream())
-                log("Existing service entries: $oldServices")
-                allServices.addAll(oldServices)
-            } catch (e: IOException) {
-                // According to the javadoc, Filer.getResource throws an exception
-                // if the file doesn't already exist.  In practice this doesn't
-                // appear to be the case.  Filer.getResource will happily return a
-                // FileObject that refers to a non-existent file but will throw
-                // IOException if you try to open an input stream for it.
-                log("Resource file did not already exist.")
-            }
+            val allServices = readImplementationsFromRes(resourceFile)
 
             if (allServices.contains(newService)) {
                 log("No new service entries being added.")
@@ -219,7 +215,7 @@ class InversionProcessor : AbstractProcessor() {
 
             allServices.add(newService)
             log("New service file contents: $allServices")
-            val fileObject = filer.createResource(
+            val fileObject = processingEnv.filer.createResource(
                 StandardLocation.CLASS_OUTPUT, "",
                 resourceFile
             )
@@ -233,8 +229,39 @@ class InversionProcessor : AbstractProcessor() {
         }
     }
 
+    private fun readImplementationsFromRes(resourceFile: String): MutableSet<String> {
+        val allServices = mutableSetOf<String>()
+        try {
+            // would like to be able to print the full path
+            // before we attempt to get the resource in case the behavior
+            // of filer.getResource does change to match the spec, but there's
+            // no good way to resolve CLASS_OUTPUT without first getting a resource.
+            val existingFile = processingEnv.filer.getResource(
+                StandardLocation.CLASS_OUTPUT, "",
+                resourceFile
+            )
+            log("Looking for existing resource file at " + existingFile.toUri())
+            val oldServices = ServicesFiles.readServiceFile(existingFile.openInputStream())
+            log("Existing service entries: $oldServices")
+            allServices.addAll(oldServices)
+        } catch (e: IOException) {
+            // According to the javadoc, Filer.getResource throws an exception
+            // if the file doesn't already exist.  In practice this doesn't
+            // appear to be the case.  Filer.getResource will happily return a
+            // FileObject that refers to a non-existent file but will throw
+            // IOException if you try to open an input stream for it.
+            log("Resource file did not already exist.")
+        }
+        return allServices
+    }
+
+    private fun getResourceFile(providerInterface: String) =
+        "META-INF/services/$providerInterface"
+
     private fun log(msg: String) {
-        processingEnv.messager.printMessage(Diagnostic.Kind.WARNING, msg)
+        if (processingEnv.getOptions().containsKey("debug")) {
+            processingEnv.messager.printMessage(Diagnostic.Kind.NOTE, msg)
+        }
     }
 
     private fun error(msg: String, element: Element, annotation: AnnotationMirror?) {
