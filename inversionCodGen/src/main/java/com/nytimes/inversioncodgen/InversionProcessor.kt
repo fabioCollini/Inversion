@@ -5,11 +5,14 @@ import com.nytimes.inversion.*
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.io.File
+import java.io.IOException
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.*
 import javax.tools.Diagnostic
+import javax.tools.StandardLocation
 import kotlin.reflect.KClass
+
 
 class ImplElement(
     element: ExecutableElement,
@@ -84,15 +87,11 @@ class InversionProcessor : AbstractProcessor() {
     private fun generateImpl(element: ImplElement) {
         val returnType = element.returnType
         val factoryInterface = ClassName(returnType.packageName, returnType.simpleName + "Factory")
+        val factoryClassName = "${element.methodName}__factory"
         FileSpec.builder(element.packageName, "MyFactoryImpl")
             .addType(
-                TypeSpec.classBuilder("${element.methodName}__factory")
+                TypeSpec.classBuilder(factoryClassName)
                     .addSuperinterface(factoryInterface)
-                    .addAnnotation(
-                        AnnotationSpec.builder(AutoService::class)
-                            .addMember(factoryInterface.simpleName + "::class")
-                            .build()
-                    )
                     .addFunction(
                         FunSpec.builder("invoke")
                             .addModifiers(KModifier.OVERRIDE)
@@ -113,6 +112,11 @@ class InversionProcessor : AbstractProcessor() {
             )
             .build()
             .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
+
+        generateConfigFiles(
+            factoryInterface.canonicalName,
+            "${element.packageName}.$factoryClassName"
+        )
     }
 
     private fun generateDefClass(element: DefElement) {
@@ -126,6 +130,10 @@ class InversionProcessor : AbstractProcessor() {
             ).toTypedArray()
         )
         val factoryInterface = ClassName(returnType.packageName, returnType.simpleName + "Factory")
+        val validatorClass = ClassName(
+            returnType.packageName,
+            returnType.simpleName + "FactoryValidator"
+        )
         FileSpec.builder(element.packageName, "MyFactory")
             .addType(
                 TypeSpec.interfaceBuilder(factoryInterface)
@@ -134,16 +142,8 @@ class InversionProcessor : AbstractProcessor() {
             )
             .addType(
                 TypeSpec.classBuilder(
-                    ClassName(
-                        returnType.packageName,
-                        returnType.simpleName + "FactoryValidator"
-                    )
+                    validatorClass
                 )
-                    .addAnnotation(
-                        AnnotationSpec.builder(AutoService::class)
-                            .addMember("InversionValidator::class")
-                            .build()
-                    )
                     .addSuperinterface(InversionValidator::class)
                     .addFunction(
                         FunSpec.builder("getFactoryClass")
@@ -155,6 +155,11 @@ class InversionProcessor : AbstractProcessor() {
             )
             .build()
             .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
+
+        generateConfigFiles(
+            InversionValidator::class.java.canonicalName,
+            validatorClass.canonicalName
+        )
 
         FileSpec.builder("com.nytimes.inversion", "Inversion_ext_MyFactory")
             .addFunction(
@@ -174,12 +179,70 @@ class InversionProcessor : AbstractProcessor() {
             .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
     }
 
+    /**
+     * Kotlin conversion of the AutoService method
+     * https://github.com/google/auto/blob/master/service/processor/src/main/java/com/google/auto/service/processor/AutoServiceProcessor.java
+     */
+    private fun generateConfigFiles(providerInterface: String, newService: String) {
+        val filer = processingEnv.filer
+
+        val resourceFile = "META-INF/services/$providerInterface"
+        log("Working on resource file: $resourceFile")
+        try {
+            val allServices = mutableSetOf<String>()
+            try {
+                // would like to be able to print the full path
+                // before we attempt to get the resource in case the behavior
+                // of filer.getResource does change to match the spec, but there's
+                // no good way to resolve CLASS_OUTPUT without first getting a resource.
+                val existingFile = filer.getResource(
+                    StandardLocation.CLASS_OUTPUT, "",
+                    resourceFile
+                )
+                log("Looking for existing resource file at " + existingFile.toUri())
+                val oldServices = ServicesFiles.readServiceFile(existingFile.openInputStream())
+                log("Existing service entries: $oldServices")
+                allServices.addAll(oldServices)
+            } catch (e: IOException) {
+                // According to the javadoc, Filer.getResource throws an exception
+                // if the file doesn't already exist.  In practice this doesn't
+                // appear to be the case.  Filer.getResource will happily return a
+                // FileObject that refers to a non-existent file but will throw
+                // IOException if you try to open an input stream for it.
+                log("Resource file did not already exist.")
+            }
+
+            if (allServices.contains(newService)) {
+                log("No new service entries being added.")
+                return
+            }
+
+            allServices.add(newService)
+            log("New service file contents: $allServices")
+            val fileObject = filer.createResource(
+                StandardLocation.CLASS_OUTPUT, "",
+                resourceFile
+            )
+            val out = fileObject.openOutputStream()
+            ServicesFiles.writeServiceFile(allServices, out)
+            out.close()
+            log("Wrote to: " + fileObject.toUri())
+        } catch (e: IOException) {
+            fatalError("Unable to create $resourceFile, $e")
+            return
+        }
+    }
+
     private fun log(msg: String) {
         processingEnv.messager.printMessage(Diagnostic.Kind.WARNING, msg)
     }
 
     private fun error(msg: String, element: Element, annotation: AnnotationMirror?) {
         processingEnv.messager.printMessage(Diagnostic.Kind.ERROR, msg, element, annotation)
+    }
+
+    private fun fatalError(msg: String) {
+        processingEnv.messager.printMessage(Diagnostic.Kind.ERROR, "FATAL ERROR: $msg")
     }
 
     companion object {
