@@ -61,9 +61,6 @@ annotation class InversionImpl
 
 annotation class InversionValidate
 
-@JvmName("factory1_invoke")
-fun <T : Any> Inversion.of(c: KClass<T>): InversionFactory<T> = TODO()
-
 class InversionFactory<T : Any>(private val c: KClass<*>) {
     fun factory(): () -> T = Inversion.loadSingleService((c as KClass<() -> T>).java)
     fun <P> factory(): (P) -> T = Inversion.loadSingleService((c as KClass<(P) -> T>).java)
@@ -73,4 +70,4 @@ interface InversionValidator {
     fun getFactoryClass(): KClass<*>
 }
 
-fun <R, T : Any> Inversion.of2(c: KClass<T>): ReadOnlyProperty<R, () -> T> = TODO()
+fun <R, T : Any> Inversion.of(c: KClass<T>): ReadOnlyProperty<R, () -> T> = TODO()

@@ -186,7 +186,7 @@ class InversionProcessor : AbstractProcessor() {
             "Inversion_ext_${factoryInterface.canonicalName.replace('.', '_')}"
         )
             .addFunction(
-                FunSpec.builder("of2")
+                FunSpec.builder("of")
                     .addAnnotation(
                         AnnotationSpec.builder(JvmName::class)
                             .addMember("\"factory_${returnType.toString().replace('.', '_')}\"")

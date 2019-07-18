@@ -7,5 +7,5 @@ import kotlin.jvm.JvmName
 import kotlin.reflect.KClass
 
 @JvmName("factory_com_nytimes_inversioncodgen_cases_generateDefWithParams_MyInterface")
-fun Inversion.of2(c: KClass<MyInterface>) = delegateWithReceiver<MyClass, MyInterface,
+fun Inversion.of(c: KClass<MyInterface>) = delegateWithReceiver<MyClass, MyInterface,
     MyInterface_Factory>(MyInterface_Factory::class)
