@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.io.File
 import java.io.IOException
+import java.util.*
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.*
@@ -205,16 +206,20 @@ class InversionProcessor : AbstractProcessor() {
                     .let {
                         if (receiver == null)
                             it.addStatement(
-                                "return delegate<%T, %T>(%T::class)",
+                                "return delegate<%T, %T>(%T.load(%T::class.java, %T::class.java.classLoader).iterator().next())",
+                                factoryInterface,
                                 returnType,
+                                ServiceLoader::class,
                                 factoryInterface,
                                 factoryInterface
                             )
                         else
                             it.addStatement(
-                                "return delegateWithReceiver<%T, %T, %T>(%T::class)",
+                                "return delegateWithReceiver<%T, %T, %T>(%T.load(%T::class.java, %T::class.java.classLoader).iterator().next())",
+                                factoryInterface,
                                 receiver,
                                 returnType,
+                                ServiceLoader::class,
                                 factoryInterface,
                                 factoryInterface
                             )
