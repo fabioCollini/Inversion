@@ -33,17 +33,20 @@ object Inversion {
     }
 
     inline fun <T : Any, F : Any> delegate(factoryClass: KClass<F>): ReadOnlyProperty<Any, () -> T> {
-        val factoryImpl = loadSingleService((factoryClass as KClass<() -> T>).java)
+        val provider = ServiceLoader.load(factoryClass.java, factoryClass.java.classLoader)
+        val factoryImpl = provider.iterator().next()
         return object : ReadOnlyProperty<Any, () -> T> {
-            override fun getValue(thisRef: Any, property: KProperty<*>): () -> T = factoryImpl
+            override fun getValue(thisRef: Any, property: KProperty<*>): () -> T =
+                factoryImpl as () -> T
         }
     }
 
     inline fun <R, T : Any, F : Any> delegateWithReceiver(factoryClass: KClass<F>): ReadOnlyProperty<R, () -> T> {
-        val factoryImpl = loadSingleService((factoryClass as KClass<(R) -> T>).java)
+        val provider = ServiceLoader.load(factoryClass.java, factoryClass.java.classLoader)
+        val factoryImpl = provider.iterator().next()
         return object : ReadOnlyProperty<R, () -> T> {
             override fun getValue(thisRef: R, property: KProperty<*>): () -> T =
-                { factoryImpl(thisRef) }
+                { (factoryImpl as (R) -> T)(thisRef) }
         }
     }
 }
