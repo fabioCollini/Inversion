@@ -31,16 +31,30 @@ fun SuccessfulCompilationClause.generatedFiles(dir: String, vararg names: String
     }
 }
 
+class Verifier(private val dir: String, vararg names: String) {
+    private var compiler = kotlinc().withProcessors(InversionProcessor())
+        .addSources(dir, *names)
+
+    fun generatedFiles(vararg names: String) {
+        compiler.compile()
+            .succeededWithoutWarnings()
+            .generatedFiles(dir, *names)
+    }
+
+    fun withErrorContaining(error: String) {
+        compiler.compile()
+            .failed()
+            .withErrorContaining(error)
+    }
+}
+
+fun verify(dir: String, vararg names: String) = Verifier(dir, *names)
+
 class InversionProcessorTest {
     @Test
     fun generateDef() {
-        kotlinc()
-            .withProcessors(InversionProcessor())
-            .addSources("generateDef", "MyInterface")
-            .compile()
-            .succeededWithoutWarnings()
+        verify("generateDef", "MyInterface")
             .generatedFiles(
-                "generateDef",
                 "MyInterface_Factory",
                 "Inversion_ext_com_nytimes_inversioncodgen_cases_generateDef_MyInterface_Factory"
             )
@@ -48,42 +62,26 @@ class InversionProcessorTest {
 
     @Test
     fun generateImpl() {
-        kotlinc()
-            .withProcessors(InversionProcessor())
-            .addSources("generateImpl", "MyInterface", "MyImpl")
-            .compile()
-            .succeededWithoutWarnings()
-            .generatedFiles("generateImpl", "MyInterface_FactoryImpl")
+        verify("generateImpl", "MyInterface", "MyImpl")
+            .generatedFiles("MyInterface_FactoryImpl")
     }
 
     @Test
     fun noErrorsWhenImplIsAvailable() {
-        kotlinc()
-            .withProcessors(InversionProcessor())
-            .addSources("noErrorsWhenImplIsAvailable", "MyInterface", "MyImpl")
-            .compile()
-            .succeededWithoutWarnings()
+        verify("noErrorsWhenImplIsAvailable", "MyInterface", "MyImpl")
+            .generatedFiles()
     }
 
     @Test
     fun errorWhenImplementationIsNotAvailable() {
-        kotlinc()
-            .withProcessors(InversionProcessor())
-            .addSources("errorWhenImplementationIsNotAvailable", "MyInterface")
-            .compile()
-            .failed()
+        verify("errorWhenImplementationIsNotAvailable", "MyInterface")
             .withErrorContaining("Implementation not found for com.nytimes.inversioncodgen.cases.errorWhenImplementationIsNotAvailable.MyInterface_Factory")
     }
 
     @Test
     fun generateDefWithParams() {
-        kotlinc()
-            .withProcessors(InversionProcessor())
-            .addSources("generateDefWithParams", "MyInterface")
-            .compile()
-            .succeededWithoutWarnings()
+        verify("generateDefWithParams", "MyInterface")
             .generatedFiles(
-                "generateDefWithParams",
                 "MyInterface_Factory",
                 "Inversion_ext_com_nytimes_inversioncodgen_cases_generateDefWithParams_MyInterface_Factory"
             )
@@ -91,13 +89,8 @@ class InversionProcessorTest {
 
     @Test
     fun generateImplWitParams() {
-        kotlinc()
-            .withProcessors(InversionProcessor())
-            .addSources("generateImplWitParams", "MyInterface", "MyImpl")
-            .compile()
-            .succeededWithoutWarnings()
+        verify("generateImplWitParams", "MyInterface", "MyImpl")
             .generatedFiles(
-                "generateImplWitParams",
                 "MyInterface_FactoryImpl"
             )
     }
