@@ -14,6 +14,9 @@ import javax.tools.StandardLocation
 import kotlin.reflect.KClass
 
 
+private fun factoryInterface(type: ClassName) =
+    ClassName(type.packageName, type.simpleName + "_Factory")
+
 class ImplElement(
     element: ExecutableElement,
     val packageName: String
@@ -22,7 +25,7 @@ class ImplElement(
     val returnType = element.returnType.asTypeName() as ClassName
     val parameters: List<VariableElement> = element.parameters
     val simpleName: Name = element.simpleName
-    val factoryInterface = ClassName(returnType.packageName, returnType.simpleName + "Factory")
+    val factoryInterface = factoryInterface(returnType)
 }
 
 class DefElement(
@@ -31,7 +34,7 @@ class DefElement(
 ) {
     val factoryType = element.asType().asTypeName() as ParameterizedTypeName
     val returnType = factoryType.typeArguments.last() as ClassName
-    val factoryInterface = ClassName(returnType.packageName, returnType.simpleName + "Factory")
+    val factoryInterface = factoryInterface(returnType)
 }
 
 @AutoService(Processor::class)
@@ -106,8 +109,8 @@ class InversionProcessor : AbstractProcessor() {
 
     private fun generateImpl(element: ImplElement) {
         val factoryInterface = element.factoryInterface
-        val factoryClassName = "${element.methodName}__factory"
-        FileSpec.builder(element.packageName, "MyFactoryImpl")
+        val factoryClassName = "${factoryInterface.simpleName}Impl"
+        FileSpec.builder(element.packageName, factoryClassName)
             .addType(
                 TypeSpec.classBuilder(factoryClassName)
                     .addSuperinterface(factoryInterface)
@@ -151,9 +154,9 @@ class InversionProcessor : AbstractProcessor() {
         val factoryInterface = element.factoryInterface
         val validatorClass = ClassName(
             returnType.packageName,
-            returnType.simpleName + "FactoryValidator"
+            returnType.simpleName + "_FactoryValidator"
         )
-        FileSpec.builder(element.packageName, "MyFactory")
+        FileSpec.builder(element.packageName, factoryInterface.simpleName)
             .addType(
                 TypeSpec.interfaceBuilder(factoryInterface)
                     .addSuperinterface(realFactoryType)
@@ -180,7 +183,7 @@ class InversionProcessor : AbstractProcessor() {
             validatorClass.canonicalName
         )
 
-        FileSpec.builder("com.nytimes.inversion", "Inversion_ext_MyFactory")
+        FileSpec.builder("com.nytimes.inversion", "Inversion_ext_${factoryInterface.canonicalName.replace('.', '_')}")
             .addFunction(
                 FunSpec.builder("of")
                     .addAnnotation(
@@ -190,7 +193,11 @@ class InversionProcessor : AbstractProcessor() {
                     )
                     .receiver(Inversion::class)
                     .addParameter("c", KClass::class.asClassName().parameterizedBy(returnType))
-                    .addStatement("return InversionFactory<%T>(%T::class)", returnType, factoryInterface)
+                    .addStatement(
+                        "return InversionFactory<%T>(%T::class)",
+                        returnType,
+                        factoryInterface
+                    )
                     .build()
             )
             .build()

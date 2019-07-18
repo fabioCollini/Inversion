@@ -19,10 +19,6 @@ dependencies {
     testImplementation "org.permissionsdispatcher:kompile-testing:0.1.3"
 }
 
-kapt {
-    generateStubs = true
-}
-
 sourceSets {
     main {
         java {

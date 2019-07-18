@@ -29,34 +29,34 @@ class InversionProcessorTest {
             .compile()
             .succeededWithoutWarnings()
             .apply {
-                generatedFile("com/nytimes/libinterface/MyFactory.kt")
+                generatedFile("com/nytimes/libinterface/MyInterface_Factory.kt")
                     .hasSourceEquivalentTo(
                         """
                         package com.nytimes.libinterface
                         
                         import com.nytimes.inversion.InversionValidator
                         
-                        interface MyInterfaceFactory : () -> MyInterface
+                        interface MyInterface_Factory : () -> MyInterface
                         
-                        class MyInterfaceFactoryValidator : InversionValidator {
-                          override fun getFactoryClass() = MyInterfaceFactory::class
+                        class MyInterface_FactoryValidator : InversionValidator {
+                          override fun getFactoryClass() = MyInterface_Factory::class
                         }
         
                         """.trimIndent()
                     )
 
-                generatedFile("com/nytimes/inversion/Inversion_ext_MyFactory.kt")
+                generatedFile("com/nytimes/inversion/Inversion_ext_com_nytimes_libinterface_MyInterface_Factory.kt")
                     .hasSourceEquivalentTo(
                         """
                         package com.nytimes.inversion
                         
                         import com.nytimes.libinterface.MyInterface
-                        import com.nytimes.libinterface.MyInterfaceFactory
+                        import com.nytimes.libinterface.MyInterface_Factory
                         import kotlin.jvm.JvmName
                         import kotlin.reflect.KClass
                         
                         @JvmName("factory_com_nytimes_libinterface_MyInterface")
-                        fun Inversion.of(c: KClass<MyInterface>) = InversionFactory<MyInterface>(MyInterfaceFactory::class)
+                        fun Inversion.of(c: KClass<MyInterface>) = InversionFactory<MyInterface>(MyInterface_Factory::class)
 
                         """.trimIndent()
                     )
@@ -95,15 +95,15 @@ class InversionProcessorTest {
             )
             .compile()
             .succeededWithoutWarnings()
-            .generatedFile("com/nytimes/libimpl/MyFactoryImpl.kt")
+            .generatedFile("com/nytimes/libimpl/MyInterface_FactoryImpl.kt")
             .hasSourceEquivalentTo(
                 """
             package com.nytimes.libimpl
 
             import com.nytimes.libinterface.MyInterface
-            import com.nytimes.libinterface.MyInterfaceFactory
+            import com.nytimes.libinterface.MyInterface_Factory
             
-            class provideImpl__factory : MyInterfaceFactory {
+            class MyInterface_FactoryImpl : MyInterface_Factory {
               override fun invoke(): MyInterface = provideImpl()
             }
             
@@ -177,7 +177,7 @@ class InversionProcessorTest {
             )
             .compile()
             .failed()
-            .withErrorContaining("Implementation not found for com.nytimes.libinterface.MyInterfaceFactory")
+            .withErrorContaining("Implementation not found for com.nytimes.libinterface.MyInterface_Factory")
     }
 
     @Test
@@ -206,34 +206,34 @@ class InversionProcessorTest {
             .compile()
             .succeededWithoutWarnings()
             .apply {
-                generatedFile("com/nytimes/libinterface/MyFactory.kt")
+                generatedFile("com/nytimes/libinterface/MyInterface_Factory.kt")
                     .hasSourceEquivalentTo(
                         """
                         package com.nytimes.libinterface
                         
                         import com.nytimes.inversion.InversionValidator
                         
-                        interface MyInterfaceFactory : (MyClass) -> MyInterface
+                        interface MyInterface_Factory : (MyClass) -> MyInterface
         
-                        class MyInterfaceFactoryValidator : InversionValidator {
-                          override fun getFactoryClass() = MyInterfaceFactory::class
+                        class MyInterface_FactoryValidator : InversionValidator {
+                          override fun getFactoryClass() = MyInterface_Factory::class
                         }
 
                         """.trimIndent()
                     )
 
-                generatedFile("com/nytimes/inversion/Inversion_ext_MyFactory.kt")
+                generatedFile("com/nytimes/inversion/Inversion_ext_com_nytimes_libinterface_MyInterface_Factory.kt")
                     .hasSourceEquivalentTo(
                         """
                         package com.nytimes.inversion
                         
                         import com.nytimes.libinterface.MyInterface
-                        import com.nytimes.libinterface.MyInterfaceFactory
+                        import com.nytimes.libinterface.MyInterface_Factory
                         import kotlin.jvm.JvmName
                         import kotlin.reflect.KClass
                         
                         @JvmName("factory_com_nytimes_libinterface_MyInterface")
-                        fun Inversion.of(c: KClass<MyInterface>) = InversionFactory<MyInterface>(MyInterfaceFactory::class)
+                        fun Inversion.of(c: KClass<MyInterface>) = InversionFactory<MyInterface>(MyInterface_Factory::class)
         
                         """.trimIndent()
                     )
@@ -275,16 +275,16 @@ class InversionProcessorTest {
             )
             .compile()
             .succeededWithoutWarnings()
-            .generatedFile("com/nytimes/libimpl/MyFactoryImpl.kt")
+            .generatedFile("com/nytimes/libimpl/MyInterface_FactoryImpl.kt")
             .hasSourceEquivalentTo(
                 """
                 package com.nytimes.libimpl
     
                 import com.nytimes.libinterface.MyClass
                 import com.nytimes.libinterface.MyInterface
-                import com.nytimes.libinterface.MyInterfaceFactory
+                import com.nytimes.libinterface.MyInterface_Factory
                 
-                class provideImpl__factory : MyInterfaceFactory {
+                class MyInterface_FactoryImpl : MyInterface_Factory {
                   override fun invoke(param: MyClass): MyInterface = provideImpl(param)
                 }
                 
