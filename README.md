@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity() {
 In case a parameter is need to construct the real implementation the `InversionDef` annotated property can
 be defined as an extension property:
 
-```
+```kotlin
 interface MyInterface {
     fun doSomething()
 }
@@ -65,7 +65,7 @@ val Application.factory by Inversion.of(MyInterface::class)
 In this example the `Application` instance can be used to create the implementation in the `InversionImpl`
 annotated method:
 
-```
+```kotlin
 class MyImpl(val app: Application) : MyInterface {
     override fun doSomething() {
         //...
