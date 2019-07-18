@@ -11,4 +11,4 @@ class MyImpl : MyInterface {
 }
 
 @InversionImpl
-fun provideImpl(param: Container): MyInterface = param.getOrCreate { MyImpl() }
+fun Container.provideImpl(): MyInterface = getOrCreate { MyImpl() }

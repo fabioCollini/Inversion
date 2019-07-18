@@ -21,7 +21,6 @@ class ImplElement(
     element: ExecutableElement,
     val packageName: String
 ) {
-    val methodName = element.simpleName.toString()
     val returnType = element.returnType.asTypeName() as ClassName
     val parameters: List<VariableElement> = element.parameters
     val simpleName: Name = element.simpleName
@@ -108,6 +107,8 @@ class InversionProcessor : AbstractProcessor() {
     private fun getPackageName(it: Element) =
         processingEnv.elementUtils.getPackageOf(it).toString()
 
+    private fun VariableElement.isReceiver() = simpleName.toString().contains('$')
+
     private fun generateImpl(element: ImplElement) {
         val factoryInterface = element.factoryInterface
         val factoryClassName = "${factoryInterface.simpleName}Impl"
@@ -122,13 +123,20 @@ class InversionProcessor : AbstractProcessor() {
                             .apply {
                                 element.parameters.forEach {
                                     addParameter(
-                                        it.simpleName.toString(),
+                                        if (it.isReceiver()) "param" else it.simpleName.toString(),
                                         it.asType().asTypeName()
                                     )
                                 }
                             }
-                            .addStatement("return ${element.simpleName}(%L)",
-                                element.parameters.joinToString { it.simpleName.toString() })
+                            .apply {
+                                if (element.parameters.getOrNull(0)?.isReceiver() == true)
+                                    addStatement("return param.${element.simpleName}()")
+                                else
+                                    addStatement(
+                                        "return ${element.simpleName}(%L)",
+                                        element.parameters.joinToString { it.simpleName.toString() }
+                                    )
+                            }
                             .build()
                     )
                     .build()

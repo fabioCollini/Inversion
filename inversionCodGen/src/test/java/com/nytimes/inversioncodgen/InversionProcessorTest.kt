@@ -94,4 +94,12 @@ class InversionProcessorTest {
                 "MyInterface_FactoryImpl"
             )
     }
+
+    @Test
+    fun generateImplWitReceiver() {
+        verify("generateImplWitReceiver", "MyInterface", "MyImpl")
+            .generatedFiles(
+                "MyInterface_FactoryImpl"
+            )
+    }
 }
