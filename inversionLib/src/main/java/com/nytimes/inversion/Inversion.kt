@@ -10,7 +10,7 @@ object Inversion {
     inline fun <reified T> loadSingleService(): T =
         loadSingleService(T::class.java)
 
-    fun <T> loadSingleService(c: Class<T>): T {
+    inline fun <T> loadSingleService(c: Class<T>): T {
         val provider = ServiceLoader.load(c, c.classLoader)
         return provider.iterator().next()
     }
@@ -18,7 +18,7 @@ object Inversion {
     inline fun <reified T> loadServiceList(): List<T> =
         loadServiceList(T::class.java)
 
-    fun <T> loadServiceList(c: Class<T>): List<T> {
+    inline fun <T> loadServiceList(c: Class<T>): List<T> {
         return try {
             val provider = ServiceLoader.load(c, c.classLoader)
             val ret = mutableListOf<T>()
