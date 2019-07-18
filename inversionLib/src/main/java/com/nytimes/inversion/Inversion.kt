@@ -1,7 +1,9 @@
 package com.nytimes.inversion
 
 import java.util.*
+import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KClass
+import kotlin.reflect.KProperty
 
 object Inversion {
 
@@ -29,9 +31,29 @@ object Inversion {
             emptyList()
         }
     }
+
+    fun <T : Any, F : Any> delegate(factoryClass: KClass<F>): ReadOnlyProperty<Any, () -> T> {
+        return object : ReadOnlyProperty<Any, () -> T> {
+            override fun getValue(thisRef: Any, property: KProperty<*>): () -> T {
+                return {
+                    InversionFactory<T>(factoryClass).factory()()
+                }
+            }
+        }
+    }
+
+    fun <R, T : Any, F : Any> delegateWithReceiver(factoryClass: KClass<F>): ReadOnlyProperty<R, () -> T> {
+        return object : ReadOnlyProperty<R, () -> T> {
+            override fun getValue(thisRef: R, property: KProperty<*>): () -> T {
+                return {
+                    InversionFactory<T>(factoryClass).factory<R>()(thisRef)
+                }
+            }
+        }
+    }
 }
 
-@Target(AnnotationTarget.FIELD)
+@Target(AnnotationTarget.PROPERTY_GETTER)
 annotation class InversionDef
 
 @Target(AnnotationTarget.FUNCTION)
@@ -50,3 +72,5 @@ class InversionFactory<T : Any>(private val c: KClass<*>) {
 interface InversionValidator {
     fun getFactoryClass(): KClass<*>
 }
+
+fun <R, T : Any> Inversion.of2(c: KClass<T>): ReadOnlyProperty<R, () -> T> = TODO()

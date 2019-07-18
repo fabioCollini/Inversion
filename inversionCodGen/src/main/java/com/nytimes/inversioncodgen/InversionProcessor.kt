@@ -29,12 +29,13 @@ class ImplElement(
 }
 
 class DefElement(
-    element: VariableElement,
+    private val element: ExecutableElement,
     val packageName: String
 ) {
-    val factoryType = element.asType().asTypeName() as ParameterizedTypeName
-    val returnType = factoryType.typeArguments.last() as ClassName
-    val factoryInterface = factoryInterface(returnType)
+    val receiver: VariableElement? get() = element.parameters.getOrNull(0)
+    val factoryType get() = element.returnType.asTypeName() as ParameterizedTypeName
+    val returnType get() = factoryType.typeArguments.last() as ClassName
+    val factoryInterface get() = factoryInterface(returnType)
 }
 
 @AutoService(Processor::class)
@@ -62,7 +63,7 @@ class InversionProcessor : AbstractProcessor() {
         impls.forEach { generateImpl(it) }
 
         val defs = roundEnvironment.getElementsAnnotatedWith(InversionDef::class.java)
-            .filterIsInstance<VariableElement>()
+            .filterIsInstance<ExecutableElement>()
             .map { DefElement(it, getPackageName(it)) }
 
         defs.forEach { generateDefClass(it) }
@@ -142,14 +143,11 @@ class InversionProcessor : AbstractProcessor() {
     }
 
     private fun generateDefClass(element: DefElement) {
-        val args = element.factoryType.typeArguments
         val returnType = element.returnType
+        val receiver = element.receiver
         val realFactoryType = LambdaTypeName.get(
             returnType = returnType,
-            parameters = *args.subList(
-                0,
-                args.size - 1
-            ).toTypedArray()
+            parameters = *listOfNotNull(receiver?.asType()?.asTypeName()).toTypedArray()
         )
         val factoryInterface = element.factoryInterface
         val validatorClass = ClassName(
@@ -183,9 +181,12 @@ class InversionProcessor : AbstractProcessor() {
             validatorClass.canonicalName
         )
 
-        FileSpec.builder("com.nytimes.inversion", "Inversion_ext_${factoryInterface.canonicalName.replace('.', '_')}")
+        FileSpec.builder(
+            "com.nytimes.inversion",
+            "Inversion_ext_${factoryInterface.canonicalName.replace('.', '_')}"
+        )
             .addFunction(
-                FunSpec.builder("of")
+                FunSpec.builder("of2")
                     .addAnnotation(
                         AnnotationSpec.builder(JvmName::class)
                             .addMember("\"factory_${returnType.toString().replace('.', '_')}\"")
@@ -193,11 +194,23 @@ class InversionProcessor : AbstractProcessor() {
                     )
                     .receiver(Inversion::class)
                     .addParameter("c", KClass::class.asClassName().parameterizedBy(returnType))
-                    .addStatement(
-                        "return InversionFactory<%T>(%T::class)",
-                        returnType,
-                        factoryInterface
-                    )
+                    .let {
+                        if (receiver == null)
+                            it.addStatement(
+                                "return delegate<%T, %T>(%T::class)",
+                                returnType,
+                                factoryInterface,
+                                factoryInterface
+                            )
+                        else
+                            it.addStatement(
+                                "return delegateWithReceiver<%T, %T, %T>(%T::class)",
+                                receiver,
+                                returnType,
+                                factoryInterface,
+                                factoryInterface
+                            )
+                    }
                     .build()
             )
             .build()

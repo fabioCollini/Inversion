@@ -2,7 +2,7 @@ package com.nytimes.libinterface
 
 import com.nytimes.inversion.Inversion
 import com.nytimes.inversion.InversionDef
-import com.nytimes.inversion.of
+import com.nytimes.inversion.of2
 
 interface Container {
     fun <V> getOrCreate(f: () -> V): V
@@ -11,8 +11,11 @@ interface Container {
 interface MyInterface {
     fun doSomething(): String
 
-    companion object {
-        @InversionDef
-        val factory = Inversion.of(MyInterface::class).factory<Container>()
-    }
+//    companion object {
+//        @get:InversionDef
+//        val factory by Inversion.of2(MyInterface::class)
+//    }
 }
+
+@get:InversionDef
+val Container.factory by Inversion.of2(MyInterface::class)

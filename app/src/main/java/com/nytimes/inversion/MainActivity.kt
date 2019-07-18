@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.nytimes.libinterface.Container
-import com.nytimes.libinterface.MyInterface
+import com.nytimes.libinterface.factory
 
 object MyContainer : Container {
     private var last: Any? = null
@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val impl = MyInterface.factory(MyContainer)
+        val impl = MyContainer.factory()
         findViewById<TextView>(R.id.text).text = impl.doSomething()
     }
 }

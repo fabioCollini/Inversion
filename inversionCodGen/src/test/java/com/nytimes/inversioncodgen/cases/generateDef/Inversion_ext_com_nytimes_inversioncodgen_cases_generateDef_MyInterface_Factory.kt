@@ -6,4 +6,5 @@ import kotlin.jvm.JvmName
 import kotlin.reflect.KClass
 
 @JvmName("factory_com_nytimes_inversioncodgen_cases_generateDef_MyInterface")
-fun Inversion.of(c: KClass<MyInterface>) = InversionFactory<MyInterface>(MyInterface_Factory::class)
+fun Inversion.of2(c: KClass<MyInterface>) = delegate<MyInterface,
+    MyInterface_Factory>(MyInterface_Factory::class)
