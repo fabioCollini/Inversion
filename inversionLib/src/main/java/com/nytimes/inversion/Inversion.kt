@@ -32,23 +32,18 @@ object Inversion {
         }
     }
 
-    fun <T : Any, F : Any> delegate(factoryClass: KClass<F>): ReadOnlyProperty<Any, () -> T> {
+    inline fun <T : Any, F : Any> delegate(factoryClass: KClass<F>): ReadOnlyProperty<Any, () -> T> {
+        val factoryImpl = loadSingleService((factoryClass as KClass<() -> T>).java)
         return object : ReadOnlyProperty<Any, () -> T> {
-            override fun getValue(thisRef: Any, property: KProperty<*>): () -> T {
-                return {
-                    InversionFactory<T>(factoryClass).factory()()
-                }
-            }
+            override fun getValue(thisRef: Any, property: KProperty<*>): () -> T = factoryImpl
         }
     }
 
-    fun <R, T : Any, F : Any> delegateWithReceiver(factoryClass: KClass<F>): ReadOnlyProperty<R, () -> T> {
+    inline fun <R, T : Any, F : Any> delegateWithReceiver(factoryClass: KClass<F>): ReadOnlyProperty<R, () -> T> {
+        val factoryImpl = loadSingleService((factoryClass as KClass<(R) -> T>).java)
         return object : ReadOnlyProperty<R, () -> T> {
-            override fun getValue(thisRef: R, property: KProperty<*>): () -> T {
-                return {
-                    InversionFactory<T>(factoryClass).factory<R>()(thisRef)
-                }
-            }
+            override fun getValue(thisRef: R, property: KProperty<*>): () -> T =
+                { factoryImpl(thisRef) }
         }
     }
 }
@@ -60,11 +55,6 @@ annotation class InversionDef
 annotation class InversionImpl
 
 annotation class InversionValidate
-
-class InversionFactory<T : Any>(private val c: KClass<*>) {
-    fun factory(): () -> T = Inversion.loadSingleService((c as KClass<() -> T>).java)
-    fun <P> factory(): (P) -> T = Inversion.loadSingleService((c as KClass<(P) -> T>).java)
-}
 
 interface InversionValidator {
     fun getFactoryClass(): KClass<*>
