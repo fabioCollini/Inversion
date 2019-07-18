@@ -12,8 +12,8 @@ interface MyInterface {
     fun doSomething(): String
 
     companion object {
-        @InversionDef
-        val create = Inversion.of(MyInterface::class).factory()
+        @get:InversionDef
+        val create by Inversion.of(MyInterface::class)
     }
 }
 ```
@@ -32,8 +32,8 @@ class MyImpl : MyInterface {
 fun provideImpl(): MyInterface = MyImpl()
 ```
 
-And that's all! Now from a third module (for example an Android application) we can retrieve the real
-implementation invoking `create`:
+And that's all! Now from a third module (for example an Android application) the real
+implementation can be retrieved invoking `create`:
 
 ```kotlin
 @InversionValidate
@@ -46,4 +46,32 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.text).text = impl.doSomething()
     }
 }
+```
+
+## Extension methods
+
+In case a parameter is need to construct the real implementation the `InversionDef` annotated property can
+be defined as an extension property:
+
+```
+interface MyInterface {
+    fun doSomething()
+}
+
+@get:InversionDef
+val Application.factory by Inversion.of(MyInterface::class)
+```
+
+In this example the `Application` instance can be used to create the implementation in the `InversionImpl`
+annotated method:
+
+```
+class MyImpl(val app: Application) : MyInterface {
+    override fun doSomething() {
+        //...
+    }
+}
+
+@InversionImpl
+fun Application.provideImpl(): MyInterface = MyImpl(this)
 ```
