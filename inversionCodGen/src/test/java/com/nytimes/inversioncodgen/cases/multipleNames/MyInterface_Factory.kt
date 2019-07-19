@@ -1,7 +1,7 @@
 package com.nytimes.inversioncodgen.cases.multipleNames
 
-import com.nytimes.inversion.InversionValidator
-import com.nytimes.inversion.NamedGeneratedFactory
+import com.nytimes.inversion.internal.InversionValidator
+import com.nytimes.inversion.internal.NamedGeneratedFactory
 
 interface MyInterface_Factory : (MyClass) -> MyInterface, NamedGeneratedFactory
 

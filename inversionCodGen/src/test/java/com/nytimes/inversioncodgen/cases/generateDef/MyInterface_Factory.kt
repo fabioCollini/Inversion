@@ -1,6 +1,6 @@
 package com.nytimes.inversioncodgen.cases.generateDef
 
-import com.nytimes.inversion.InversionValidator
+import com.nytimes.inversion.internal.InversionValidator
 
 interface MyInterface_Factory : () -> MyInterface
 

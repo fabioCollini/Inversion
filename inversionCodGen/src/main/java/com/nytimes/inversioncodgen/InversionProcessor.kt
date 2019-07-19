@@ -3,6 +3,8 @@ package com.nytimes.inversioncodgen
 import com.google.auto.service.AutoService
 import com.nytimes.inversion.*
 import com.nytimes.inversion.internal.InversionDelegates
+import com.nytimes.inversion.internal.InversionValidator
+import com.nytimes.inversion.internal.NamedGeneratedFactory
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.io.File
@@ -137,16 +139,33 @@ class InversionProcessor : AbstractProcessor() {
                 }
             }
 
-        Inversion.loadServiceList<InversionValidator>()
+        loadServiceList<InversionValidator>()
             .map { it.getFactoryClass() }
             .forEach { factoryClass ->
-                val implementations = Inversion.loadServiceList(factoryClass.java) +
+                val implementations = loadServiceList(factoryClass.java) +
                         readImplementationsFromRes(getResourceFile(factoryClass.java.canonicalName)) +
                         impls.filter { it.factoryInterface.canonicalName == factoryClass.java.canonicalName }
                 if (implementations.isEmpty()) {
                     error("Implementation not found for $factoryClass", element, null)
                 }
             }
+    }
+
+    private inline fun <reified T> loadServiceList(): List<T> =
+        loadServiceList(T::class.java)
+
+    private fun <T> loadServiceList(c: Class<T>): List<T> {
+        return try {
+            val provider = ServiceLoader.load(c, c.classLoader)
+            val ret = mutableListOf<T>()
+            val iterator = provider.iterator()
+            while (iterator.hasNext()) {
+                ret.add(iterator.next())
+            }
+            ret
+        } catch (e: ServiceConfigurationError) {
+            emptyList()
+        }
     }
 
     private fun getPackageName(it: Element) =

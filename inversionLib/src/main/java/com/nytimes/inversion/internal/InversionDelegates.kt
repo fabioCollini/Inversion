@@ -1,6 +1,5 @@
 package com.nytimes.inversion.internal
 
-import com.nytimes.inversion.NamedGeneratedFactory
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
