@@ -60,7 +60,12 @@ class InversionProcessor : AbstractProcessor() {
             .filterIsInstance<ExecutableElement>()
             .map { ImplElement(it, getPackageName(it)) }
 
-        impls.forEach { generateImpl(it) }
+        impls.map { generateImpl(it) }
+            .groupBy(
+                keySelector = { it.first },
+                valueTransform = { it.second }
+            )
+            .forEach { (key, list) -> generateConfigFiles(key, list) }
 
         val defs = roundEnvironment.getElementsAnnotatedWith(InversionDef::class.java)
             .filterIsInstance<ExecutableElement>()
@@ -68,10 +73,7 @@ class InversionProcessor : AbstractProcessor() {
 
         val validators = defs.map { generateDefClass(it) }
 
-        generateConfigFiles(
-            InversionValidator::class.java.canonicalName,
-            *validators.toTypedArray()
-        )
+        generateConfigFiles(InversionValidator::class.java.canonicalName, validators)
 
         roundEnvironment.getElementsAnnotatedWith(InversionValidate::class.java)
             .firstOrNull()
@@ -115,7 +117,7 @@ class InversionProcessor : AbstractProcessor() {
 
     private fun VariableElement.isReceiver() = simpleName.toString().contains('$')
 
-    private fun generateImpl(element: ImplElement) {
+    private fun generateImpl(element: ImplElement): Pair<String, String> {
         val factoryInterface = element.factoryInterface
         val factoryClassName = "${factoryInterface.simpleName}Impl"
         FileSpec.builder(element.packageName, factoryClassName)
@@ -150,13 +152,10 @@ class InversionProcessor : AbstractProcessor() {
             .build()
             .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
 
-        generateConfigFiles(
-            factoryInterface.canonicalName,
-            "${element.packageName}.$factoryClassName"
-        )
+        return factoryInterface.canonicalName to "${element.packageName}.$factoryClassName"
     }
 
-    private fun generateDefClass(element: DefElement) : String {
+    private fun generateDefClass(element: DefElement): String {
         val returnType = element.returnType
         val receiver = element.receiver
         val realFactoryType = LambdaTypeName.get(
@@ -236,13 +235,13 @@ class InversionProcessor : AbstractProcessor() {
      * Kotlin conversion of the AutoService method
      * https://github.com/google/auto/blob/master/service/processor/src/main/java/com/google/auto/service/processor/AutoServiceProcessor.java
      */
-    private fun generateConfigFiles(providerInterface: String, vararg newServices: String) {
+    private fun generateConfigFiles(providerInterface: String, newServices: List<String>) {
         val resourceFile = getResourceFile(providerInterface)
         log("Working on resource file: $resourceFile")
         try {
             val allServices = readImplementationsFromRes(resourceFile)
 
-            if (allServices.containsAll(newServices.toList())) {
+            if (allServices.containsAll(newServices)) {
                 log("No new service entries being added.")
                 return
             }

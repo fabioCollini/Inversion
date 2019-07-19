@@ -62,7 +62,7 @@ class InversionProcessorTest {
 
     @Test
     fun multipleClassesInASingleFile() {
-        verify("multipleClassesInASingleFile", "MyInterface")
+        verify("multipleClassesInASingleFile", "MyInterface", "MyImpl")
             .generatedFiles(
                 "MyInterface_Factory"
             )
