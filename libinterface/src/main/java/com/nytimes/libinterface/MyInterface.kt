@@ -2,6 +2,7 @@ package com.nytimes.libinterface
 
 import com.nytimes.inversion.Inversion
 import com.nytimes.inversion.InversionDef
+import com.nytimes.inversion.mapOf
 import com.nytimes.inversion.of
 
 interface Container {
@@ -19,3 +20,9 @@ interface MyInterface {
 
 @get:InversionDef
 val Container.factory by Inversion.of(MyInterface::class)
+
+
+interface MultiInstanceInterface
+
+@get:InversionDef
+val multipleInstancesMap by Inversion.mapOf(MultiInstanceInterface::class)

@@ -32,17 +32,37 @@ object Inversion {
         }
     }
 
-    fun <F : Any, T : Any> delegate(factoryImpl: F?): ReadOnlyProperty<Any, () -> T> {
+    fun <T : Any> delegate(factoryImpl: () -> T): ReadOnlyProperty<Any, () -> T> {
         return object : ReadOnlyProperty<Any, () -> T> {
             override fun getValue(thisRef: Any, property: KProperty<*>): () -> T =
-                factoryImpl as () -> T
+                factoryImpl
         }
     }
 
-    fun <F : Any, R, T : Any> delegateWithReceiver(factoryImpl: F): ReadOnlyProperty<R, () -> T> {
+    fun <T : Any, F> mapDelegate(factoryImpl: List<F>): ReadOnlyProperty<Any?, () -> Map<String, T>>
+            where F : () -> T, F : NamedGeneratedFactory {
+        return object : ReadOnlyProperty<Any?, () -> Map<String, T>> {
+            override fun getValue(thisRef: Any?, property: KProperty<*>): () -> Map<String, T> =
+                {
+                    factoryImpl.associate { it.name to it() }
+                }
+        }
+    }
+
+    fun <R, T : Any> delegateWithReceiver(factoryImpl: (R) -> T): ReadOnlyProperty<R, () -> T> {
         return object : ReadOnlyProperty<R, () -> T> {
             override fun getValue(thisRef: R, property: KProperty<*>): () -> T =
-                { (factoryImpl as (R) -> T)(thisRef) }
+                { factoryImpl(thisRef) }
+        }
+    }
+
+    fun <R, T : Any, F> mapDelegateWithReceiver(factoryImpl: List<F>): ReadOnlyProperty<R, () -> Map<String, T>>
+            where F : (R) -> T, F : NamedGeneratedFactory {
+        return object : ReadOnlyProperty<R, () -> Map<String, T>> {
+            override fun getValue(thisRef: R, property: KProperty<*>): () -> Map<String, T> =
+                {
+                    factoryImpl.associate { it.name to it(thisRef) }
+                }
         }
     }
 }
@@ -51,7 +71,7 @@ object Inversion {
 annotation class InversionDef
 
 @Target(AnnotationTarget.FUNCTION)
-annotation class InversionImpl
+annotation class InversionImpl(val value: String = "")
 
 annotation class InversionValidate
 
@@ -60,3 +80,9 @@ interface InversionValidator {
 }
 
 fun <R, T : Any> Inversion.of(c: KClass<T>): ReadOnlyProperty<R, () -> T> = TODO()
+
+fun <R, T : Any> Inversion.mapOf(c: KClass<T>): ReadOnlyProperty<R, () -> Map<String, T>> = TODO()
+
+interface NamedGeneratedFactory {
+    val name: String
+}

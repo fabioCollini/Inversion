@@ -7,6 +7,6 @@ import kotlin.jvm.JvmName
 import kotlin.reflect.KClass
 
 @JvmName("factory_com_nytimes_inversioncodgen_cases_generateDef_MyInterface")
-fun Inversion.of(c: KClass<MyInterface>) = delegate<MyInterface_Factory,
-    MyInterface>(ServiceLoader.load(MyInterface_Factory::class.java,
+fun Inversion.of(c: KClass<MyInterface>) =
+    delegate(ServiceLoader.load(MyInterface_Factory::class.java,
     MyInterface_Factory::class.java.classLoader).iterator().next())

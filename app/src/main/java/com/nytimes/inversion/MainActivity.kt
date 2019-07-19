@@ -5,6 +5,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.nytimes.libinterface.Container
 import com.nytimes.libinterface.factory
+import com.nytimes.libinterface.multipleInstancesMap
 
 object MyContainer : Container {
     private var last: Any? = null
@@ -22,6 +23,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         val impl = MyContainer.factory()
-        findViewById<TextView>(R.id.text).text = impl.doSomething()
+        val map = multipleInstancesMap()
+        findViewById<TextView>(R.id.text).text = impl.doSomething() + map
     }
 }

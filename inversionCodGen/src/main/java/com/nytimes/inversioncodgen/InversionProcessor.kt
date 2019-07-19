@@ -26,6 +26,7 @@ class ImplElement(
     val parameters: List<VariableElement> = element.parameters
     val simpleName: Name = element.simpleName
     val factoryInterface = factoryInterface(returnType)
+    val instanceName = element.getAnnotation(InversionImpl::class.java).value
 }
 
 class DefElement(
@@ -34,7 +35,20 @@ class DefElement(
 ) {
     val receiver: VariableElement? get() = element.parameters.getOrNull(0)
     val factoryType get() = element.returnType.asTypeName() as ParameterizedTypeName
-    val returnType get() = factoryType.typeArguments.last() as ClassName
+    val returnType: ClassName
+        get() {
+            val ret = factoryType.typeArguments.last()
+            return if (ret is ParameterizedTypeName) {
+                ret.typeArguments.last() as ClassName
+            } else {
+                ret as ClassName
+            }
+        }
+    val isReturningMap: Boolean
+        get() {
+            val ret = factoryType.typeArguments.last()
+            return ret is ParameterizedTypeName
+        }
     val factoryInterface get() = factoryInterface(returnType)
 }
 
@@ -119,7 +133,8 @@ class InversionProcessor : AbstractProcessor() {
 
     private fun generateImpl(element: ImplElement): Pair<String, String> {
         val factoryInterface = element.factoryInterface
-        val factoryClassName = "${factoryInterface.simpleName}Impl"
+        val suffix = if (element.instanceName.isEmpty()) "" else "_${element.instanceName}"
+        val factoryClassName = "${factoryInterface.simpleName}Impl$suffix"
         FileSpec.builder(element.packageName, factoryClassName)
             .addType(
                 TypeSpec.classBuilder(factoryClassName)
@@ -147,6 +162,16 @@ class InversionProcessor : AbstractProcessor() {
                             }
                             .build()
                     )
+                    .run {
+                        if (element.instanceName.isEmpty())
+                            this
+                        else
+                            addProperty(
+                                PropertySpec.builder("name", String::class, KModifier.OVERRIDE)
+                                    .initializer("\"${element.instanceName}\"")
+                                    .build()
+                            )
+                    }
                     .build()
             )
             .build()
@@ -171,6 +196,12 @@ class InversionProcessor : AbstractProcessor() {
             .addType(
                 TypeSpec.interfaceBuilder(factoryInterface)
                     .addSuperinterface(realFactoryType)
+                    .run {
+                        if (element.isReturningMap)
+                            addSuperinterface(NamedGeneratedFactory::class.java)
+                        else
+                            this
+                    }
                     .build()
             )
             .addType(
@@ -194,7 +225,7 @@ class InversionProcessor : AbstractProcessor() {
             "Inversion_ext_${factoryInterface.canonicalName.replace('.', '_')}"
         )
             .addFunction(
-                FunSpec.builder("of")
+                FunSpec.builder(if (element.isReturningMap) "mapOf" else "of")
                     .addAnnotation(
                         AnnotationSpec.builder(JvmName::class)
                             .addMember("\"factory_${returnType.toString().replace('.', '_')}\"")
@@ -203,21 +234,19 @@ class InversionProcessor : AbstractProcessor() {
                     .receiver(Inversion::class)
                     .addParameter("c", KClass::class.asClassName().parameterizedBy(returnType))
                     .let {
+                        val prefix = if (element.isReturningMap) "mapDelegate" else "delegate"
+                        val suffix =
+                            if (element.isReturningMap) ".asSequence().toList()" else ".next()"
                         if (receiver == null)
                             it.addStatement(
-                                "return delegate<%T, %T>(%T.load(%T::class.java, %T::class.java.classLoader).iterator().next())",
-                                factoryInterface,
-                                returnType,
+                                "return $prefix(%T.load(%T::class.java, %T::class.java.classLoader).iterator()$suffix)",
                                 ServiceLoader::class,
                                 factoryInterface,
                                 factoryInterface
                             )
                         else
                             it.addStatement(
-                                "return delegateWithReceiver<%T, %T, %T>(%T.load(%T::class.java, %T::class.java.classLoader).iterator().next())",
-                                factoryInterface,
-                                receiver,
-                                returnType,
+                                "return ${prefix}WithReceiver(%T.load(%T::class.java, %T::class.java.classLoader).iterator()$suffix)",
                                 ServiceLoader::class,
                                 factoryInterface,
                                 factoryInterface
