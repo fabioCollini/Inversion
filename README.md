@@ -48,9 +48,7 @@ class MainActivity : AppCompatActivity() {
 }
 ```
 
-## Extension methods
-
-In case a parameter is need to construct the real implementation the `InversionDef` annotated property can
+In case a parameter is needed to construct the real implementation the `InversionDef` annotated property can
 be defined as an extension property:
 
 ```kotlin
