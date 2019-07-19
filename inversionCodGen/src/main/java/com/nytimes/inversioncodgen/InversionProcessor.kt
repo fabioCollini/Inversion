@@ -26,7 +26,7 @@ class ImplElement(
     val parameters: List<VariableElement> = element.parameters
     val simpleName: Name = element.simpleName
     val factoryInterface = factoryInterface(returnType)
-    val instanceName = element.getAnnotation(InversionImpl::class.java).value
+    val instanceName = element.getAnnotation(InversionProvider::class.java).value
 }
 
 class DefElement(
@@ -59,7 +59,7 @@ class InversionProcessor : AbstractProcessor() {
 
     override fun getSupportedAnnotationTypes() =
         mutableSetOf(
-            InversionImpl::class.java.name,
+            InversionProvider::class.java.name,
             InversionDef::class.java.name,
             InversionValidate::class.java.name
         )
@@ -70,7 +70,7 @@ class InversionProcessor : AbstractProcessor() {
         set: MutableSet<out TypeElement>?,
         roundEnvironment: RoundEnvironment
     ): Boolean {
-        val impls = roundEnvironment.getElementsAnnotatedWith(InversionImpl::class.java)
+        val impls = roundEnvironment.getElementsAnnotatedWith(InversionProvider::class.java)
             .filterIsInstance<ExecutableElement>()
             .map { ImplElement(it, getPackageName(it)) }
 

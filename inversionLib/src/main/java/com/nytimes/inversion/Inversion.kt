@@ -71,7 +71,7 @@ object Inversion {
 annotation class InversionDef
 
 @Target(AnnotationTarget.FUNCTION)
-annotation class InversionImpl(val value: String = "")
+annotation class InversionProvider(val value: String = "")
 
 annotation class InversionValidate
 

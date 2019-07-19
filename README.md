@@ -21,14 +21,14 @@ interface MyInterface {
 The `create` field is a `() -> MyInterface` lambda so can be used to create a new instance. The first module
 doesn't contain any real implementation of `MyInterface`.
 
-A second module defines the real implementation and an `InversionImpl` annotated method to create it:
+A second module defines the real implementation and an `InversionProvider` annotated method to create it:
 
 ```kotlin
 class MyImpl : MyInterface {
     override fun doSomething() = "Hello world!"
 }
 
-@InversionImpl
+@InversionProvider
 fun provideImpl(): MyInterface = MyImpl()
 ```
 
@@ -62,7 +62,7 @@ interface MyInterface {
 val Application.factory by Inversion.of(MyInterface::class)
 ```
 
-In this example the `Application` instance can be used to create the implementation in the `InversionImpl`
+In this example the `Application` instance can be used to create the implementation in the `InversionProvider`
 annotated method:
 
 ```kotlin
@@ -72,6 +72,6 @@ class MyImpl(val app: Application) : MyInterface {
     }
 }
 
-@InversionImpl
+@InversionProvider
 fun Application.provideImpl(): MyInterface = MyImpl(this)
 ```

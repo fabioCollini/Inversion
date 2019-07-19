@@ -1,6 +1,6 @@
 package com.nytimes.inversioncodgen.cases.generateImplWitParams
 
-import com.nytimes.inversion.InversionImpl
+import com.nytimes.inversion.InversionProvider
 
 class MyImpl : MyInterface {
     override fun doSomething() {
@@ -8,5 +8,5 @@ class MyImpl : MyInterface {
     }
 }
 
-@InversionImpl
+@InversionProvider
 fun provideImpl(param: MyClass): MyInterface = MyImpl()

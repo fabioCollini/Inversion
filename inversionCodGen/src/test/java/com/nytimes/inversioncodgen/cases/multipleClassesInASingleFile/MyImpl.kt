@@ -1,6 +1,6 @@
 package com.nytimes.inversioncodgen.cases.multipleClassesInASingleFile
 
-import com.nytimes.inversion.InversionImpl
+import com.nytimes.inversion.InversionProvider
 
 class MyImpl : MyInterface {
     override fun doSomething() {
@@ -8,8 +8,8 @@ class MyImpl : MyInterface {
     }
 }
 
-@InversionImpl("A")
+@InversionProvider("A")
 fun provideImplA(): MyInterface = MyImpl()
 
-@InversionImpl("B")
+@InversionProvider("B")
 fun provideImplB(): MyInterface = MyImpl()
