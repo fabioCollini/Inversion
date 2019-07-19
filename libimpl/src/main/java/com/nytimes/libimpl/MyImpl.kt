@@ -1,5 +1,6 @@
 package com.nytimes.libimpl
 
+import com.nytimes.inversion.InversionImpl
 import com.nytimes.inversion.InversionProvider
 import com.nytimes.libinterface.Container
 import com.nytimes.libinterface.MultiInstanceInterface
@@ -14,11 +15,10 @@ class MyImpl : MyInterface {
 @InversionProvider
 fun Container.provideImpl(): MyInterface = getOrCreate { MyImpl() }
 
-@InversionProvider("A")
-fun provideImplA(): MultiInstanceInterface =
-    object : MultiInstanceInterface {
-        override fun toString() = "InstanceA"
-    }
+@InversionImpl("A")
+class MultiInstanceInterfaceImpl : MultiInstanceInterface {
+    override fun toString() = "InstanceA"
+}
 
 @InversionProvider("B")
 fun provideImplB(): MultiInstanceInterface =

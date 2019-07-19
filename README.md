@@ -18,18 +18,16 @@ interface MyInterface {
 }
 ```
 
-The `create` field is a `() -> MyInterface` lambda so can be used to create a new instance. The first module
+The `create` field is a `() -> MyInterface` lambda, it can be used to create a new instance. The first module
 doesn't contain any real implementation of `MyInterface`.
 
-A second module defines the real implementation and an `InversionProvider` annotated method to create it:
+A second module defines the real implementation annotated with `InversionImpl`: 
 
 ```kotlin
+@InversionImpl
 class MyImpl : MyInterface {
     override fun doSomething() = "Hello world!"
 }
-
-@InversionProvider
-fun provideImpl(): MyInterface = MyImpl()
 ```
 
 And that's all! Now from a third module (for example an Android application) the real
@@ -48,8 +46,16 @@ class MainActivity : AppCompatActivity() {
 }
 ```
 
-In case a parameter is needed to construct the real implementation the `InversionDef` annotated property can
-be defined as an extension property:
+## Custom implementation creation
+
+In case an extra logic is needed to create the real implementation an `InversionProvider` annotated method can be used:
+
+```kotlin
+@InversionProvider
+fun provideImpl(): MyInterface = MyImpl() 
+```
+
+If a parameter is needed the `InversionDef` annotated property can be defined as an extension property:
 
 ```kotlin
 interface MyInterface {

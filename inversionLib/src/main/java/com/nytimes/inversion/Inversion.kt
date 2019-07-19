@@ -70,6 +70,9 @@ object Inversion {
 @Target(AnnotationTarget.PROPERTY_GETTER)
 annotation class InversionDef
 
+@Target(AnnotationTarget.CLASS)
+annotation class InversionImpl(val value: String = "")
+
 @Target(AnnotationTarget.FUNCTION)
 annotation class InversionProvider(val value: String = "")
 

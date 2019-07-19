@@ -18,15 +18,33 @@ import kotlin.reflect.KClass
 private fun factoryInterface(type: ClassName) =
     ClassName(type.packageName, type.simpleName + "_Factory")
 
-class ImplElement(
-    element: ExecutableElement,
+interface ImplElement {
     val packageName: String
-) {
-    val returnType = element.returnType.asTypeName() as ClassName
-    val parameters: List<VariableElement> = element.parameters
-    val simpleName: Name = element.simpleName
-    val factoryInterface = factoryInterface(returnType)
-    val instanceName = element.getAnnotation(InversionProvider::class.java).value
+    val returnType: ClassName
+    val parameters: List<VariableElement>
+    val simpleName: Name
+    val factoryInterface: ClassName get() = factoryInterface(returnType)
+    val instanceName: String
+}
+
+class ImplExecutableElement(
+    element: ExecutableElement,
+    override val packageName: String
+) : ImplElement {
+    override val returnType = element.returnType.asTypeName() as ClassName
+    override val parameters: List<VariableElement> = element.parameters
+    override val simpleName: Name = element.simpleName
+    override val instanceName = element.getAnnotation(InversionProvider::class.java).value
+}
+
+class ImplClassElement(
+    element: TypeElement,
+    override val packageName: String
+) : ImplElement {
+    override val returnType = element.interfaces[0].asTypeName() as ClassName
+    override val parameters: List<VariableElement> = emptyList()
+    override val simpleName: Name = element.simpleName
+    override val instanceName = element.getAnnotation(InversionImpl::class.java).value
 }
 
 class DefElement(
@@ -59,6 +77,7 @@ class InversionProcessor : AbstractProcessor() {
 
     override fun getSupportedAnnotationTypes() =
         mutableSetOf(
+            InversionImpl::class.java.name,
             InversionProvider::class.java.name,
             InversionDef::class.java.name,
             InversionValidate::class.java.name
@@ -72,7 +91,10 @@ class InversionProcessor : AbstractProcessor() {
     ): Boolean {
         val impls = roundEnvironment.getElementsAnnotatedWith(InversionProvider::class.java)
             .filterIsInstance<ExecutableElement>()
-            .map { ImplElement(it, getPackageName(it)) }
+            .map { ImplExecutableElement(it, getPackageName(it)) } +
+                roundEnvironment.getElementsAnnotatedWith(InversionImpl::class.java)
+                    .filterIsInstance<TypeElement>()
+                    .map { ImplClassElement(it, getPackageName(it)) }
 
         impls.map { generateImpl(it) }
             .groupBy(
