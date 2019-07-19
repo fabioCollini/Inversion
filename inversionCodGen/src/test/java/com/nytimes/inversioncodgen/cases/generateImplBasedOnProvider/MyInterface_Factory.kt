@@ -1,4 +1,4 @@
-package com.nytimes.inversioncodgen.cases.generateImpl
+package com.nytimes.inversioncodgen.cases.generateImplBasedOnProvider
 
 import com.nytimes.inversion.InversionValidator
 

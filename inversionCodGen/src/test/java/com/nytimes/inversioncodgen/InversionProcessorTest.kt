@@ -70,7 +70,7 @@ class InversionProcessorTest {
 
     @Test
     fun generateImpl() {
-        verify("generateImpl", "MyInterface", "MyImpl")
+        verify("generateImplBasedOnProvider", "MyInterface", "MyImpl")
             .generatedFiles("MyInterface_FactoryImpl")
     }
 
