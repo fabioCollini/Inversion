@@ -66,7 +66,12 @@ class InversionProcessor : AbstractProcessor() {
             .filterIsInstance<ExecutableElement>()
             .map { DefElement(it, getPackageName(it)) }
 
-        defs.forEach { generateDefClass(it) }
+        val validators = defs.map { generateDefClass(it) }
+
+        generateConfigFiles(
+            InversionValidator::class.java.canonicalName,
+            *validators.toTypedArray()
+        )
 
         roundEnvironment.getElementsAnnotatedWith(InversionValidate::class.java)
             .firstOrNull()
@@ -151,7 +156,7 @@ class InversionProcessor : AbstractProcessor() {
         )
     }
 
-    private fun generateDefClass(element: DefElement) {
+    private fun generateDefClass(element: DefElement) : String {
         val returnType = element.returnType
         val receiver = element.receiver
         val realFactoryType = LambdaTypeName.get(
@@ -184,11 +189,6 @@ class InversionProcessor : AbstractProcessor() {
             )
             .build()
             .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
-
-        generateConfigFiles(
-            InversionValidator::class.java.canonicalName,
-            validatorClass.canonicalName
-        )
 
         FileSpec.builder(
             "com.nytimes.inversion",
@@ -228,24 +228,26 @@ class InversionProcessor : AbstractProcessor() {
             )
             .build()
             .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
+
+        return validatorClass.canonicalName
     }
 
     /**
      * Kotlin conversion of the AutoService method
      * https://github.com/google/auto/blob/master/service/processor/src/main/java/com/google/auto/service/processor/AutoServiceProcessor.java
      */
-    private fun generateConfigFiles(providerInterface: String, newService: String) {
+    private fun generateConfigFiles(providerInterface: String, vararg newServices: String) {
         val resourceFile = getResourceFile(providerInterface)
         log("Working on resource file: $resourceFile")
         try {
             val allServices = readImplementationsFromRes(resourceFile)
 
-            if (allServices.contains(newService)) {
+            if (allServices.containsAll(newServices.toList())) {
                 log("No new service entries being added.")
                 return
             }
 
-            allServices.add(newService)
+            allServices.addAll(newServices)
             log("New service file contents: $allServices")
             val fileObject = processingEnv.filer.createResource(
                 StandardLocation.CLASS_OUTPUT, "",

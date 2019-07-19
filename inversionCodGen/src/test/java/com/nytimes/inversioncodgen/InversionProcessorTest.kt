@@ -61,9 +61,17 @@ class InversionProcessorTest {
     }
 
     @Test
+    fun multipleClassesInASingleFile() {
+        verify("multipleClassesInASingleFile", "MyInterface")
+            .generatedFiles(
+                "MyInterface_Factory"
+            )
+    }
+
+    @Test
     fun generateImpl() {
         verify("generateImpl", "MyInterface", "MyImpl")
-            .generatedFiles("MyInterface_FactoryImpl")
+            .generatedFiles("MyInterface_A_FactoryImpl")
     }
 
     @Test
@@ -91,7 +99,7 @@ class InversionProcessorTest {
     fun generateImplWitParams() {
         verify("generateImplWitParams", "MyInterface", "MyImpl")
             .generatedFiles(
-                "MyInterface_FactoryImpl"
+                "MyInterface_A_FactoryImpl"
             )
     }
 
@@ -99,7 +107,7 @@ class InversionProcessorTest {
     fun generateImplWitReceiver() {
         verify("generateImplWitReceiver", "MyInterface", "MyImpl")
             .generatedFiles(
-                "MyInterface_FactoryImpl"
+                "MyInterface_A_FactoryImpl"
             )
     }
 }
