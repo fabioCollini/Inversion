@@ -73,3 +73,27 @@ class MyImpl(val app: Application) : MyInterface {
 @InversionProvider
 fun Application.provideImpl(): MyInterface = MyImpl(this)
 ```
+
+## Multi binding
+
+When multiple implementations must be defined the `mapOf` method can be used instead of `of`:
+
+```kotlin
+@get:InversionDef
+val allValues by Inversion.mapOf(MyInterface::class)
+```
+
+In this way the `allValues` field is a `() -> Map<String, MyInterface>` that can be used to retrieve a map with all the implementations.
+
+Multiple implementations can be defined specifying in the annotation a `String` that will be used as key in the map: 
+
+```kotlin
+@InversionProvider("A")
+fun MyClass.provideImplA(): MyInterface = MyImplA()
+
+@InversionProvider("B")
+fun MyClass.provideImplB(): MyInterface = MyImplB()
+```
+
+An example of usage of a multi binding is available in this [plaid fork](https://github.com/fabioCollini/plaid/), here the [commit](https://github.com/fabioCollini/plaid/commit/6ba6b722547e078bf324e6bd5e51fe0840220541) 
+that introduces Inversion and removes some reflection calls.
