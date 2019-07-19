@@ -2,6 +2,7 @@ package com.nytimes.inversioncodgen
 
 import com.google.auto.service.AutoService
 import com.nytimes.inversion.*
+import com.nytimes.inversion.internal.InversionDelegates
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.io.File
@@ -261,14 +262,16 @@ class InversionProcessor : AbstractProcessor() {
                             if (element.isReturningMap) ".asSequence().toList()" else ".next()"
                         if (receiver == null)
                             it.addStatement(
-                                "return $prefix(%T.load(%T::class.java, %T::class.java.classLoader).iterator()$suffix)",
+                                "return %T.$prefix(%T.load(%T::class.java, %T::class.java.classLoader).iterator()$suffix)",
+                                InversionDelegates::class,
                                 ServiceLoader::class,
                                 factoryInterface,
                                 factoryInterface
                             )
                         else
                             it.addStatement(
-                                "return ${prefix}WithReceiver(%T.load(%T::class.java, %T::class.java.classLoader).iterator()$suffix)",
+                                "return %T.${prefix}WithReceiver(%T.load(%T::class.java, %T::class.java.classLoader).iterator()$suffix)",
+                                InversionDelegates::class,
                                 ServiceLoader::class,
                                 factoryInterface,
                                 factoryInterface
