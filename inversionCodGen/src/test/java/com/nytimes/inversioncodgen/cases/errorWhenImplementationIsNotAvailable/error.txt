@@ -1,0 +1,1 @@
+Implementation not found for com.nytimes.inversioncodgen.cases.errorWhenImplementationIsNotAvailable.MyInterface_Factory

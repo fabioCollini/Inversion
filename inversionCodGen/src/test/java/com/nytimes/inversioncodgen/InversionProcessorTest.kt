@@ -11,7 +11,7 @@ fun kompile.testing.Compiler.addSources(
 ): kompile.testing.Compiler {
     var ret = this
     names.forEach { name ->
-        val fileName = "com/nytimes/inversioncodgen/cases/$dir/$name.kt"
+        val fileName = "com/nytimes/inversioncodgen/cases/$dir/$name"
         ret = addKotlin(
             fileName,
             File("src/test/java/$fileName").readText()
@@ -22,118 +22,91 @@ fun kompile.testing.Compiler.addSources(
 
 fun SuccessfulCompilationClause.generatedFiles(dir: String, vararg names: String) {
     names.forEach { name ->
-        val fileName = "com/nytimes/inversioncodgen/cases/$dir/$name.kt"
+        val fileName = "com/nytimes/inversioncodgen/cases/$dir/$name"
         val generatedFileName = if (name.startsWith("Inversion_"))
-            "com/nytimes/inversion/$name.kt"
+            "com/nytimes/inversion/$name"
         else
             fileName
         generatedFile(generatedFileName).hasSourceEquivalentTo(File("src/test/java/$fileName").readText())
     }
 }
 
-class Verifier(private val dir: String, vararg names: String) {
-    private var compiler = kotlinc().withProcessors(InversionProcessor())
-        .addSources(dir, *names)
+fun isResultFile(name: String) =
+    name.startsWith("Inversion_") || name.endsWith("_Factory.kt") || name.contains("_FactoryImpl")
 
-    fun generatedFiles(vararg names: String) {
+fun verifyDir(dir: String) {
+    val files = File("src/test/java/com/nytimes/inversioncodgen/cases/$dir").listFiles().map { it.name }
+
+    val compiler = kotlinc().withProcessors(InversionProcessor())
+        .addSources(dir, *files.filter { it != "error.txt" && !isResultFile(it) }.toTypedArray())
+
+    val error  = files.filter { it == "error.txt" }.getOrNull(0)
+
+    if (error == null) {
+        val results = files.filter { it != "error.txt" && isResultFile(it) }
         compiler.compile()
             .succeeded()
-            .generatedFiles(dir, *names)
-    }
-
-    fun withErrorContaining(error: String) {
+            .generatedFiles(dir, *results.toTypedArray())
+    } else {
         compiler.compile()
             .failed()
-            .withErrorContaining(error)
+            .withErrorContaining(File("src/test/java/com/nytimes/inversioncodgen/cases/$dir/error.txt").readText())
     }
 }
-
-fun verify(dir: String, vararg names: String) = Verifier(dir, *names)
 
 class InversionProcessorTest {
     @Test
     fun generateDef() {
-        verify("generateDef", "MyInterface")
-            .generatedFiles(
-                "MyInterface_Factory",
-                "Inversion_ext_com_nytimes_inversioncodgen_cases_generateDef_MyInterface_Factory"
-            )
+        verifyDir("generateDef")
     }
 
     @Test
     fun multipleClassesInASingleFile() {
-        verify("multipleClassesInASingleFile", "MyInterface", "MyImpl")
-            .generatedFiles(
-                "MyInterface_Factory"
-            )
+        verifyDir("multipleClassesInASingleFile")
     }
 
     @Test
     fun generateImpl() {
-        verify("generateImpl", "MyInterface", "MyImpl")
-            .generatedFiles("MyInterface_Factory", "MyInterface_FactoryImpl")
+        verifyDir("generateImpl")
     }
 
     @Test
     fun generateImplBasedOnProvider() {
-        verify("generateImplBasedOnProvider", "MyInterface", "MyImpl")
-            .generatedFiles("MyInterface_FactoryImpl")
+        verifyDir("generateImplBasedOnProvider")
     }
 
     @Test
     fun noErrorsWhenImplIsAvailable() {
-        verify("noErrorsWhenImplIsAvailable", "MyInterface", "MyImpl")
-            .generatedFiles()
+        verifyDir("noErrorsWhenImplIsAvailable")
     }
 
     @Test
     fun errorWhenImplementationIsNotAvailable() {
-        verify("errorWhenImplementationIsNotAvailable", "MyInterface")
-            .withErrorContaining("Implementation not found for com.nytimes.inversioncodgen.cases.errorWhenImplementationIsNotAvailable.MyInterface_Factory")
+        verifyDir("errorWhenImplementationIsNotAvailable")
     }
 
     @Test
     fun generateDefWithParams() {
-        verify("generateDefWithParams", "MyInterface")
-            .generatedFiles(
-                "MyInterface_Factory",
-                "Inversion_ext_com_nytimes_inversioncodgen_cases_generateDefWithParams_MyInterface_Factory"
-            )
+        verifyDir("generateDefWithParams")
     }
 
     @Test
     fun generateDefAsClassProperty() {
-        verify("generateDefAsClassProperty", "MyInterface")
-            .generatedFiles(
-                "MyInterface_Factory",
-                "Inversion_ext_com_nytimes_inversioncodgen_cases_generateDefAsClassProperty_MyInterface_Factory"
-            )
+        verifyDir("generateDefAsClassProperty")
     }
 
     @Test
     fun generateImplWitParams() {
-        verify("generateImplWitParams", "MyInterface", "MyImpl")
-            .generatedFiles(
-                "MyInterface_FactoryImpl"
-            )
+        verifyDir("generateImplWitParams")
     }
 
     @Test
     fun generateImplWitReceiver() {
-        verify("generateImplWitReceiver", "MyInterface", "MyImpl")
-            .generatedFiles(
-                "MyInterface_FactoryImpl"
-            )
+        verifyDir("generateImplWitReceiver")
     }
 
     @Test
     fun multipleNames() {
-        verify("multipleNames", "MyInterface", "MyImpl")
-            .generatedFiles(
-                "MyInterface_FactoryImpl_A",
-                "MyInterface_FactoryImpl_B",
-                "MyInterface_Factory",
-                "Inversion_ext_com_nytimes_inversioncodgen_cases_multipleNames_MyInterface_Factory"
-            )
+        verifyDir("multipleNames")
     }
 }
