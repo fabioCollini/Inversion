@@ -37,7 +37,7 @@ class Verifier(private val dir: String, vararg names: String) {
 
     fun generatedFiles(vararg names: String) {
         compiler.compile()
-            .succeededWithoutWarnings()
+            .succeeded()
             .generatedFiles(dir, *names)
     }
 
@@ -71,7 +71,7 @@ class InversionProcessorTest {
     @Test
     fun generateImpl() {
         verify("generateImpl", "MyInterface", "MyImpl")
-            .generatedFiles("MyInterface_FactoryImpl")
+            .generatedFiles("MyInterface_Factory", "MyInterface_FactoryImpl")
     }
 
     @Test
@@ -98,6 +98,15 @@ class InversionProcessorTest {
             .generatedFiles(
                 "MyInterface_Factory",
                 "Inversion_ext_com_nytimes_inversioncodgen_cases_generateDefWithParams_MyInterface_Factory"
+            )
+    }
+
+    @Test
+    fun generateDefAsClassProperty() {
+        verify("generateDefAsClassProperty", "MyInterface")
+            .generatedFiles(
+                "MyInterface_Factory",
+                "Inversion_ext_com_nytimes_inversioncodgen_cases_generateDefAsClassProperty_MyInterface_Factory"
             )
     }
 

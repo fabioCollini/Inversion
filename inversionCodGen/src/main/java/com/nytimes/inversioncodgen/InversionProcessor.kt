@@ -7,6 +7,11 @@ import com.nytimes.inversion.internal.InversionValidator
 import com.nytimes.inversion.internal.NamedGeneratedFactory
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
+import me.eugeniomarletti.kotlin.metadata.classKind
+import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
+import me.eugeniomarletti.kotlin.metadata.proto
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
 import java.io.File
 import java.io.IOException
 import java.util.*
@@ -17,6 +22,11 @@ import javax.tools.Diagnostic
 import javax.tools.StandardLocation
 import kotlin.reflect.KClass
 
+
+private val Element.isCompanionObject: Boolean
+    get() {
+        return (kotlinMetadata as KotlinClassMetadata).data.proto.classKind == ProtoBuf.Class.Kind.COMPANION_OBJECT
+    }
 
 private fun factoryInterface(type: ClassName) =
     ClassName(type.packageName, type.simpleName + "_Factory")
@@ -54,7 +64,13 @@ class DefElement(
     private val element: ExecutableElement,
     val packageName: String
 ) {
-    val receiver: VariableElement? get() = element.parameters.getOrNull(0)
+    val receiver: Element?
+        get() = element.parameters.getOrNull(0)
+            ?: when {
+                element.modifiers.contains(Modifier.STATIC) -> null
+                element.enclosingElement.isCompanionObject -> null
+                else -> element.enclosingElement
+            }
     val factoryType get() = element.returnType.asTypeName() as ParameterizedTypeName
     val returnType: ClassName
         get() {
