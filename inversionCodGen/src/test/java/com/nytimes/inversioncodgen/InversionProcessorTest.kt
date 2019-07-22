@@ -3,7 +3,11 @@ package com.nytimes.inversioncodgen
 import kompile.testing.SuccessfulCompilationClause
 import kompile.testing.kotlinc
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 import java.io.File
+
+private const val CASES_DIR = "com/nytimes/inversioncodgen/cases/"
 
 fun kompile.testing.Compiler.addSources(
     dir: String,
@@ -11,7 +15,7 @@ fun kompile.testing.Compiler.addSources(
 ): kompile.testing.Compiler {
     var ret = this
     names.forEach { name ->
-        val fileName = "com/nytimes/inversioncodgen/cases/$dir/$name"
+        val fileName = "$CASES_DIR$dir/$name"
         ret = addKotlin(
             fileName,
             File("src/test/java/$fileName").readText()
@@ -22,7 +26,7 @@ fun kompile.testing.Compiler.addSources(
 
 fun SuccessfulCompilationClause.generatedFiles(dir: String, vararg names: String) {
     names.forEach { name ->
-        val fileName = "com/nytimes/inversioncodgen/cases/$dir/$name"
+        val fileName = "$CASES_DIR$dir/$name"
         val generatedFileName = if (name.startsWith("Inversion_"))
             "com/nytimes/inversion/$name"
         else
@@ -35,12 +39,13 @@ fun isResultFile(name: String) =
     name.startsWith("Inversion_") || name.endsWith("_Factory.kt") || name.contains("_FactoryImpl")
 
 fun verifyDir(dir: String) {
-    val files = File("src/test/java/com/nytimes/inversioncodgen/cases/$dir").listFiles().map { it.name }
+    val files =
+        File("src/test/java/$CASES_DIR$dir").listFiles().map { it.name }
 
     val compiler = kotlinc().withProcessors(InversionProcessor())
         .addSources(dir, *files.filter { it != "error.txt" && !isResultFile(it) }.toTypedArray())
 
-    val error  = files.filter { it == "error.txt" }.getOrNull(0)
+    val error = files.filter { it == "error.txt" }.getOrNull(0)
 
     if (error == null) {
         val results = files.filter { it != "error.txt" && isResultFile(it) }
@@ -50,63 +55,21 @@ fun verifyDir(dir: String) {
     } else {
         compiler.compile()
             .failed()
-            .withErrorContaining(File("src/test/java/com/nytimes/inversioncodgen/cases/$dir/error.txt").readText())
+            .withErrorContaining(File("src/test/java/$CASES_DIR$dir/error.txt").readText())
     }
 }
 
-class InversionProcessorTest {
+@RunWith(Parameterized::class)
+class InversionProcessorTest(private val dir: String) {
     @Test
-    fun generateDef() {
-        verifyDir("generateDef")
+    fun generateClasses() {
+        verifyDir(dir)
     }
 
-    @Test
-    fun multipleClassesInASingleFile() {
-        verifyDir("multipleClassesInASingleFile")
-    }
-
-    @Test
-    fun generateImpl() {
-        verifyDir("generateImpl")
-    }
-
-    @Test
-    fun generateImplBasedOnProvider() {
-        verifyDir("generateImplBasedOnProvider")
-    }
-
-    @Test
-    fun noErrorsWhenImplIsAvailable() {
-        verifyDir("noErrorsWhenImplIsAvailable")
-    }
-
-    @Test
-    fun errorWhenImplementationIsNotAvailable() {
-        verifyDir("errorWhenImplementationIsNotAvailable")
-    }
-
-    @Test
-    fun generateDefWithParams() {
-        verifyDir("generateDefWithParams")
-    }
-
-    @Test
-    fun generateDefAsClassProperty() {
-        verifyDir("generateDefAsClassProperty")
-    }
-
-    @Test
-    fun generateImplWitParams() {
-        verifyDir("generateImplWitParams")
-    }
-
-    @Test
-    fun generateImplWitReceiver() {
-        verifyDir("generateImplWitReceiver")
-    }
-
-    @Test
-    fun multipleNames() {
-        verifyDir("multipleNames")
+    companion object {
+        @JvmStatic
+        @Parameterized.Parameters(name = "{0}")
+        fun params() =
+            File("src/test/java/$CASES_DIR").listFiles().map { it.name }
     }
 }

@@ -113,6 +113,7 @@ class InversionProcessor : AbstractProcessor() {
             .map { ImplExecutableElement(it, getPackageName(it)) } +
                 roundEnvironment.getElementsAnnotatedWith(InversionImpl::class.java)
                     .filterIsInstance<TypeElement>()
+                    .filter { checkImpl(it) }
                     .map { ImplClassElement(it, getPackageName(it)) }
 
         impls.map { generateImpl(it) }
@@ -140,6 +141,11 @@ class InversionProcessor : AbstractProcessor() {
         return true
     }
 
+    private fun checkImpl(element: TypeElement) : Boolean {
+        element.interfaces + element.superclass
+        return true
+    }
+
     private fun validateAllDependencies(
         element: Element,
         defs: List<DefElement>,
@@ -156,13 +162,18 @@ class InversionProcessor : AbstractProcessor() {
             }
 
         loadServiceList<InversionValidator>()
-            .map { it.getFactoryClass() }
-            .forEach { factoryClass ->
+            .forEach {
+                val factoryClass = it.factoryClass
                 val implementations = loadServiceList(factoryClass.java) +
                         readImplementationsFromRes(getResourceFile(factoryClass.java.canonicalName)) +
                         impls.filter { it.factoryInterface.canonicalName == factoryClass.java.canonicalName }
                 if (implementations.isEmpty()) {
-                    error("Implementation not found for $factoryClass", element, null)
+                    val className = it.wrappedClass.asClassName().canonicalName
+                    error(
+                        "Implementation not found for $className",
+                        processingEnv.elementUtils.getTypeElement(className),
+                        null
+                    )
                 }
             }
     }
@@ -267,10 +278,14 @@ class InversionProcessor : AbstractProcessor() {
                     validatorClass
                 )
                     .addSuperinterface(InversionValidator::class)
-                    .addFunction(
-                        FunSpec.builder("getFactoryClass")
-                            .addModifiers(KModifier.OVERRIDE)
-                            .addStatement("return %T::class", factoryInterface)
+                    .addProperty(
+                        PropertySpec.builder("factoryClass", KClass::class.asClassName().parameterizedBy(factoryInterface), KModifier.OVERRIDE)
+                            .initializer("%T::class", factoryInterface)
+                            .build()
+                    )
+                    .addProperty(
+                        PropertySpec.builder("wrappedClass", KClass::class.asClassName().parameterizedBy(returnType), KModifier.OVERRIDE)
+                            .initializer("%T::class", returnType)
                             .build()
                     )
                     .build()
