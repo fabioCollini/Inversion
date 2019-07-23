@@ -30,10 +30,10 @@ private fun factoryInterface(type: ClassName) =
 
 interface ImplElement {
     val packageName: String
-    val returnType: ClassName
+    val defClass: ClassName
     val parameters: List<VariableElement>
     val simpleName: Name
-    val factoryInterface: ClassName get() = factoryInterface(returnType)
+    val factoryInterface: ClassName get() = factoryInterface(defClass)
     val instanceName: String
 }
 
@@ -41,7 +41,7 @@ class ImplExecutableElement(
     element: ExecutableElement,
     override val packageName: String
 ) : ImplElement {
-    override val returnType = element.returnType.asTypeName() as ClassName
+    override val defClass = element.returnType.asTypeName() as ClassName
     override val parameters: List<VariableElement> = element.parameters
     override val simpleName: Name = element.simpleName
     override val instanceName = element.getAnnotation(InversionProvider::class.java).value
@@ -51,7 +51,7 @@ class ImplClassElement(
     element: TypeElement,
     override val packageName: String
 ) : ImplElement {
-    override val returnType = element.interfaces[0].asTypeName() as ClassName
+    override val defClass = element.interfaces[0].asTypeName() as ClassName
     override val parameters: List<VariableElement> = emptyList()
     override val simpleName: Name = element.simpleName
     override val instanceName = element.getAnnotation(InversionImpl::class.java).value
@@ -69,7 +69,7 @@ class DefElement(
                 else -> element.enclosingElement
             }
     val factoryType get() = element.returnType.asTypeName() as ParameterizedTypeName
-    val returnType: ClassName
+    val defClass: ClassName
         get() {
             val ret = factoryType.typeArguments.last()
             return if (ret is ParameterizedTypeName) {
@@ -83,7 +83,7 @@ class DefElement(
             val ret = factoryType.typeArguments.last()
             return ret is ParameterizedTypeName
         }
-    val factoryInterface get() = factoryInterface(returnType)
+    val factoryInterface get() = factoryInterface(defClass)
 }
 
 @AutoService(Processor::class)
@@ -202,7 +202,7 @@ class InversionProcessor : AbstractProcessor() {
                     .addFunction(
                         FunSpec.builder("invoke")
                             .addModifiers(KModifier.OVERRIDE)
-                            .returns(element.returnType)
+                            .returns(element.defClass)
                             .apply {
                                 element.parameters.forEach {
                                     addParameter(
@@ -241,7 +241,7 @@ class InversionProcessor : AbstractProcessor() {
     }
 
     private fun generateDefClass(element: DefElement): String {
-        val returnType = element.returnType
+        val returnType = element.defClass
         val receiver = element.receiver
         val realFactoryType = LambdaTypeName.get(
             returnType = returnType,
