@@ -11,10 +11,13 @@ fun ProcessingEnvironment.log(msg: String) {
     }
 }
 
-fun ProcessingEnvironment.error(msg: String, element: Element, annotation: AnnotationMirror?) {
+fun ProcessingEnvironment.error(msg: String, element: Element, annotation: AnnotationMirror? = null) {
     messager.printMessage(Diagnostic.Kind.ERROR, msg, element, annotation)
 }
 
 fun ProcessingEnvironment.fatalError(msg: String) {
     messager.printMessage(Diagnostic.Kind.ERROR, "FATAL ERROR: $msg")
 }
+
+fun ProcessingEnvironment.getPackageName(it: Element) =
+    elementUtils.getPackageOf(it).toString()

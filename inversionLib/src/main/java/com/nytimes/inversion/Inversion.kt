@@ -9,7 +9,7 @@ object Inversion
 annotation class InversionDef
 
 @Target(AnnotationTarget.CLASS)
-annotation class InversionImpl(val value: String = "")
+annotation class InversionImpl(val value: String = "", val def: KClass<*> = Nothing::class)
 
 @Target(AnnotationTarget.FUNCTION)
 annotation class InversionProvider(val value: String = "")

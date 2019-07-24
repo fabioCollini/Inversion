@@ -39,9 +39,9 @@ interface ImplElement {
 
 class ImplExecutableElement(
     element: ExecutableElement,
-    override val packageName: String
+    override val packageName: String,
+    override val defClass: ClassName
 ) : ImplElement {
-    override val defClass = element.returnType.asTypeName() as ClassName
     override val parameters: List<VariableElement> = element.parameters
     override val simpleName: Name = element.simpleName
     override val instanceName = element.getAnnotation(InversionProvider::class.java).value
@@ -49,9 +49,9 @@ class ImplExecutableElement(
 
 class ImplClassElement(
     element: TypeElement,
-    override val packageName: String
+    override val packageName: String,
+    override val defClass: ClassName
 ) : ImplElement {
-    override val defClass = element.interfaces[0].asTypeName() as ClassName
     override val parameters: List<VariableElement> = emptyList()
     override val simpleName: Name = element.simpleName
     override val instanceName = element.getAnnotation(InversionImpl::class.java).value
@@ -105,12 +105,20 @@ class InversionProcessor : AbstractProcessor() {
         set: MutableSet<out TypeElement>?,
         roundEnvironment: RoundEnvironment
     ): Boolean {
+        val existingValidators = loadServiceList<InversionValidator>()
+
+        val defs = roundEnvironment.getElementsAnnotatedWith(InversionDef::class.java)
+            .filterIsInstance<ExecutableElement>()
+            .map { DefElement(it, processingEnv.getPackageName(it)) }
+
+        val implElementCalculator = ImplElementCalculator(processingEnv, existingValidators, defs)
+
         val impls = roundEnvironment.getElementsAnnotatedWith(InversionProvider::class.java)
             .filterIsInstance<ExecutableElement>()
-            .map { ImplExecutableElement(it, getPackageName(it)) } +
+            .mapNotNull { implElementCalculator.calculateFromProvider(it) } +
                 roundEnvironment.getElementsAnnotatedWith(InversionImpl::class.java)
                     .filterIsInstance<TypeElement>()
-                    .map { ImplClassElement(it, getPackageName(it)) }
+                    .mapNotNull { implElementCalculator.calculateFromImpl(it) }
 
         impls.map { generateImpl(it) }
             .groupBy(
@@ -119,19 +127,24 @@ class InversionProcessor : AbstractProcessor() {
             )
             .forEach { (key, list) -> generateConfigFiles(processingEnv, key, list) }
 
-        val defs = roundEnvironment.getElementsAnnotatedWith(InversionDef::class.java)
-            .filterIsInstance<ExecutableElement>()
-            .map { DefElement(it, getPackageName(it)) }
+        val validatorsToBeGenerated = defs.map { generateDefClass(it) }
 
-        val validators = defs.map { generateDefClass(it) }
-
-        generateConfigFiles(processingEnv, InversionValidator::class.java.canonicalName, validators)
+        generateConfigFiles(
+            processingEnv,
+            InversionValidator::class.java.canonicalName,
+            validatorsToBeGenerated
+        )
 
         roundEnvironment.getElementsAnnotatedWith(InversionValidate::class.java)
             .firstOrNull()
             ?.let { element ->
                 processingEnv.log("validate")
-                validateAllDependencies(element, defs, impls)
+                validateAllDependencies(
+                    element,
+                    defs,
+                    impls,
+                    existingValidators
+                )
             }
 
         return true
@@ -140,23 +153,28 @@ class InversionProcessor : AbstractProcessor() {
     private fun validateAllDependencies(
         element: Element,
         defs: List<DefElement>,
-        impls: List<ImplElement>
+        impls: List<ImplElement>,
+        validators: List<InversionValidator>
     ) {
         defs.map { it.factoryInterface }
             .map { it.canonicalName }
             .forEach { factoryClass ->
-                val implementations = readImplementationsFromRes(processingEnv, getResourceFile(factoryClass)) +
-                        impls.filter { it.factoryInterface.canonicalName == factoryClass }
+                val implementations =
+                    readImplementationsFromRes(processingEnv, getResourceFile(factoryClass)) +
+                            impls.filter { it.factoryInterface.canonicalName == factoryClass }
                 if (implementations.isEmpty()) {
                     processingEnv.error("Implementation not found for $factoryClass", element, null)
                 }
             }
 
-        loadServiceList<InversionValidator>()
+        validators
             .forEach {
                 val factoryClass = it.factoryClass
                 val implementations = loadServiceList(factoryClass.java) +
-                        readImplementationsFromRes(processingEnv, getResourceFile(factoryClass.java.canonicalName)) +
+                        readImplementationsFromRes(
+                            processingEnv,
+                            getResourceFile(factoryClass.java.canonicalName)
+                        ) +
                         impls.filter { it.factoryInterface.canonicalName == factoryClass.java.canonicalName }
                 if (implementations.isEmpty()) {
                     val className = it.wrappedClass.asClassName().canonicalName
@@ -185,9 +203,6 @@ class InversionProcessor : AbstractProcessor() {
             emptyList()
         }
     }
-
-    private fun getPackageName(it: Element) =
-        processingEnv.elementUtils.getPackageOf(it).toString()
 
     private fun VariableElement.isReceiver() = simpleName.toString().contains('$')
 
@@ -270,12 +285,20 @@ class InversionProcessor : AbstractProcessor() {
                 )
                     .addSuperinterface(InversionValidator::class)
                     .addProperty(
-                        PropertySpec.builder("factoryClass", KClass::class.asClassName().parameterizedBy(factoryInterface), KModifier.OVERRIDE)
+                        PropertySpec.builder(
+                            "factoryClass",
+                            KClass::class.asClassName().parameterizedBy(factoryInterface),
+                            KModifier.OVERRIDE
+                        )
                             .initializer("%T::class", factoryInterface)
                             .build()
                     )
                     .addProperty(
-                        PropertySpec.builder("wrappedClass", KClass::class.asClassName().parameterizedBy(returnType), KModifier.OVERRIDE)
+                        PropertySpec.builder(
+                            "wrappedClass",
+                            KClass::class.asClassName().parameterizedBy(returnType),
+                            KModifier.OVERRIDE
+                        )
                             .initializer("%T::class", returnType)
                             .build()
                     )
