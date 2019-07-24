@@ -111,7 +111,7 @@ class InversionProcessor : AbstractProcessor() {
             .filterIsInstance<ExecutableElement>()
             .map { DefElement(it, processingEnv.getPackageName(it)) }
 
-        val implElementCalculator = ImplElementCalculator(processingEnv, existingValidators, defs)
+        val implElementCalculator = ImplElementCalculator(processingEnv, defs)
 
         val impls = roundEnvironment.getElementsAnnotatedWith(InversionProvider::class.java)
             .filterIsInstance<ExecutableElement>()

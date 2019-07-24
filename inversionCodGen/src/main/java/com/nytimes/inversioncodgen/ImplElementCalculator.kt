@@ -1,7 +1,6 @@
 package com.nytimes.inversioncodgen
 
 import com.nytimes.inversion.InversionImpl
-import com.nytimes.inversion.internal.InversionValidator
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asTypeName
 import javax.annotation.processing.ProcessingEnvironment
@@ -9,11 +8,9 @@ import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.MirroredTypeException
-import kotlin.reflect.KClass
 
 class ImplElementCalculator(
     private val processingEnv: ProcessingEnvironment,
-    existingValidators: List<InversionValidator>,
     defs: List<DefElement>
 ) {
     fun calculateFromImpl(element: TypeElement): ImplClassElement? {
@@ -65,11 +62,10 @@ class ImplElementCalculator(
             null
     }
 
-    val allDefs =
-        existingValidators.map { it.wrappedClass.java.canonicalName } + defs.map { it.defClass.canonicalName }
+    private val allDefs = defs.map { it.defClass.canonicalName }
 
     private fun checkDefExists(element: Element, returnType: String): Boolean {
-        return if (allDefs.contains(returnType)) {
+        return if (allDefs.contains(returnType) || processingEnv.elementUtils.getTypeElement("${returnType}_FactoryValidator") != null) {
             true
         } else {
             processingEnv.error("No definition found for $returnType", element)

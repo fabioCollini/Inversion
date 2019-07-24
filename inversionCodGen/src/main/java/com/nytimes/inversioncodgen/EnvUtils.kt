@@ -11,6 +11,10 @@ fun ProcessingEnvironment.log(msg: String) {
     }
 }
 
+fun ProcessingEnvironment.warn(msg: String, element: Element, annotation: AnnotationMirror? = null) {
+    messager.printMessage(Diagnostic.Kind.WARNING, msg, element, annotation)
+}
+
 fun ProcessingEnvironment.error(msg: String, element: Element, annotation: AnnotationMirror? = null) {
     messager.printMessage(Diagnostic.Kind.ERROR, msg, element, annotation)
 }
