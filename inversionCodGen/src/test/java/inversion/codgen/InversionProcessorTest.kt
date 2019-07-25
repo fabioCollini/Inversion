@@ -1,13 +1,11 @@
 package inversion.codgen
 
-import junit.framework.Assert.assertTrue
 import kompile.testing.SuccessfulCompilationClause
 import kompile.testing.kotlinc
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import java.io.File
-import java.net.URLClassLoader
 
 private const val CASES_DIR = "inversion/codgen/cases/"
 
@@ -56,7 +54,6 @@ fun verifyDir(dir: String) {
             .generatedFiles(dir, *results.toTypedArray())
     } else {
         compiler
-            .withClasspath(URLClassLoader.newInstance(arrayOf(File("/usr/lib/jvm/java-8-oracle/lib/tools.jar").toURI().toURL())))
             .compile()
             .failed()
             .withErrorContaining(File("src/test/java/$CASES_DIR$dir/error.txt").readText())
@@ -70,19 +67,10 @@ class InversionProcessorTest(private val dir: String) {
         verifyDir(dir)
     }
 
-    @Test
-    fun checkDirExists() {
-        val file = File("src/test/java/$CASES_DIR$dir")
-        println(file.absolutePath)
-        assertTrue(file.exists())
-    }
-
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun params(): List<String> {
-            println(System.getProperty("java.version"))
-            println("path " + File("src/test/java/$CASES_DIR").absoluteFile)
             return File("src/test/java/$CASES_DIR").listFiles().map { it.name }
         }
     }

@@ -8,6 +8,8 @@ group='com.github.fabioCollini.inversion'
 dependencies {
     implementation project(':inversionLib')
 
+    implementation files(org.gradle.internal.jvm.Jvm.current().toolsJar)
+
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
     implementation 'com.google.auto.service:auto-service-annotations:1.0-rc5'
