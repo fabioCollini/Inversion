@@ -1,1 +1,1 @@
-No definition found for inversion.codgen.cases.errorWhenDefIsNotAnnotated.ExtraInterface
+No definition ABC found for inversion.codgen.cases.errorWhenDefIsNotAnnotated.ExtraInterface
