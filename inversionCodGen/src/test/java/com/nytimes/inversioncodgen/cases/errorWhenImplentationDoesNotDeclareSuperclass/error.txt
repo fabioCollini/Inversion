@@ -1,1 +1,0 @@
-No superclass or interface found for com.nytimes.inversioncodgen.cases.errorWhenImplentationDoesNotDeclareSuperclass.MyEmptyImpl

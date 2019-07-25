@@ -1,0 +1,1 @@
+Multiple superclasses/interfaces found for inversion.codgen.cases.errorOnMultipleSuperclasses.MyImplWithSuperClassAndAnotherInterface, please use the def parameter in InversionImpl annotation

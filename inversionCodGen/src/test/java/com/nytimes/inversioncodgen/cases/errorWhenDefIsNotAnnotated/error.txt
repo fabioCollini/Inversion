@@ -1,1 +1,0 @@
-No definition found for com.nytimes.inversioncodgen.cases.errorWhenDefIsNotAnnotated.ExtraInterface

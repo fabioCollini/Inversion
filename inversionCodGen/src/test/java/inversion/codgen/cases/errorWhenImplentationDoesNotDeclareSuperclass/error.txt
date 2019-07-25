@@ -1,0 +1,1 @@
+No superclass or interface found for inversion.codgen.cases.errorWhenImplentationDoesNotDeclareSuperclass.MyEmptyImpl
