@@ -1,5 +1,6 @@
 package inversion.codgen
 
+import junit.framework.Assert.assertTrue
 import kompile.testing.SuccessfulCompilationClause
 import kompile.testing.kotlinc
 import org.junit.Test
@@ -64,6 +65,13 @@ class InversionProcessorTest(private val dir: String) {
     @Test
     fun generateClasses() {
         verifyDir(dir)
+    }
+
+    @Test
+    fun checkDirExists() {
+        val file = File("src/test/java/$CASES_DIR$dir")
+        println(file.absolutePath)
+        assertTrue(file.exists())
     }
 
     companion object {
