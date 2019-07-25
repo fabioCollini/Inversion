@@ -1,4 +1,5 @@
-# Inversion [![CircleCI](https://circleci.com/gh/fabioCollini/Inversion.svg?style=svg)](https://circleci.com/gh/fabioCollini/Inversion)
+# Inversion [![CircleCI](https://circleci.com/gh/fabioCollini/Inversion.svg?style=svg)](https://circleci.com/gh/fabioCollini/Inversion) [![](https://jitpack.io/v/fabioCollini/Inversion.svg)](https://jitpack.io/#fabioCollini/Inversion)
+
 
 Inversion simplifies the `ServiceLoader` usage to retrieve all the implementations of a certain interface.
 Using Inversion it's easy to use the dependency inversion in a multi module project.
