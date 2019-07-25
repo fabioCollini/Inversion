@@ -1,4 +1,4 @@
-# Inversion
+# Inversion [![CircleCI](https://circleci.com/gh/fabioCollini/Inversion.svg?style=svg)](https://circleci.com/gh/fabioCollini/Inversion)
 
 Inversion simplifies the `ServiceLoader` usage to retrieve all the implementations of a certain interface.
 Using Inversion it's easy to use the dependency inversion in a multi module project.
@@ -30,8 +30,7 @@ class MyImpl : MyInterface {
 }
 ```
 
-And that's all! Now from a third module (for example an Android application) the real
-implementation can be retrieved invoking `create`:
+And that's all! Now the real implementation can be retrieved invoking `create`:
 
 ```kotlin
 @InversionValidate
