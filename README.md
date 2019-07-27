@@ -101,5 +101,5 @@ fun MyClass.provideImplA(): MyInterface = MyImplA()
 fun MyClass.provideImplB(): MyInterface = MyImplB()
 ```
 
-A multi binding example is available in this [plaid fork](https://github.com/fabioCollini/plaid/), here the [commit](https://github.com/fabioCollini/plaid/commit/6ba6b722547e078bf324e6bd5e51fe0840220541) 
+A multi binding example is available in this [plaid fork](https://github.com/fabioCollini/plaid/), here the [commits](https://github.com/fabioCollini/plaid/compare/original-master...fabioCollini:master) 
 that introduces Inversion and removes some reflection calls.
