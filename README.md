@@ -103,3 +103,19 @@ fun MyClass.provideImplB(): MyInterface = MyImplB()
 
 A multi binding example is available in this [plaid fork](https://github.com/fabioCollini/plaid/), here the [commits](https://github.com/fabioCollini/plaid/compare/original-master...fabioCollini:master) 
 that introduces Inversion and removes some reflection calls.
+
+## License
+
+    Copyright 2019 Fabio Collini
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
