@@ -104,6 +104,24 @@ fun MyClass.provideImplB(): MyInterface = MyImplB()
 A multi binding example is available in this [plaid fork](https://github.com/fabioCollini/plaid/), here the [commits](https://github.com/fabioCollini/plaid/compare/original-master...fabioCollini:master) 
 that introduces Inversion and removes some reflection calls.
 
+## JitPack configuration
+
+Inversion is available on [JitPack](https://jitpack.io/#fabioCollini/Inversion/),
+you can use it adding the JitPack repository in your `build.gradle` (in top level dir):
+```gradle
+repositories {
+    maven { url "https://jitpack.io" }
+}
+```
+and the dependencies in the `build.gradle` of the modules:
+
+```gradle
+dependencies {
+    kapt 'com.github.fabioCollini.inversion:inversionCodGen:0.2'
+    implementation 'com.github.fabioCollini.inversion:inversionLib:0.2'
+}
+```
+
 ## License
 
     Copyright 2019 Fabio Collini
