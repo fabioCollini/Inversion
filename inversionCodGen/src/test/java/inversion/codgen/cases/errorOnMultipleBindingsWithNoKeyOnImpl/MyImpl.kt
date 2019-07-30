@@ -18,8 +18,6 @@ package inversion.codgen.cases.errorOnMultipleBindingsWithNoKeyOnImpl
 
 import inversion.InversionImpl
 import inversion.InversionProvider
-import inversion.codgen.cases.errorOnMultipleBindingsWithNoKeyOnProvider.MyImpl
-import inversion.codgen.cases.errorOnMultipleBindingsWithNoKeyOnProvider.MyInterface
 
 @InversionImpl
 class MyImpl : MyInterface {
