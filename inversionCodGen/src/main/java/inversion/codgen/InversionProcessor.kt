@@ -318,6 +318,13 @@ class InversionProcessor : AbstractProcessor() {
                             .initializer("%T::class", returnType)
                             .build()
                     )
+//                    .run {
+//                        if (element.isReturningMap) {
+//                            this
+//                        } else {
+//                            this
+//                        }
+//                    }
                     .build()
             )
             .build()

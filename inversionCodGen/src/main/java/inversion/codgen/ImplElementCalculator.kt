@@ -16,9 +16,10 @@
 
 package inversion.codgen
 
-import inversion.InversionImpl
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asTypeName
+import inversion.InversionImpl
+import inversion.InversionProvider
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
@@ -27,9 +28,9 @@ import javax.lang.model.type.MirroredTypeException
 
 class ImplElementCalculator(
     private val processingEnv: ProcessingEnvironment,
-    defs: List<DefElement>
+    private val defs: List<DefElement>
 ) {
-    fun calculateFromImpl(element: TypeElement): ImplClassElement? {
+    fun calculateFromImpl(element: TypeElement): ImplElement? {
         val defAnnotationClass = extractClassFromImplAnnotation(element)
         val interfaces = defAnnotationClass?.let { listOf(it) }
             ?: (element.interfaces + element.superclass).filter { it.toString() != "java.lang.Object" }.map {
@@ -50,14 +51,65 @@ class ImplElementCalculator(
             }
             else -> {
                 val defClassName = interfaces[0]
-                if (checkDefExists(element, defClassName)) {
-                    val defClass = processingEnv.elementUtils.getTypeElement(defClassName).asType().asTypeName() as ClassName
-                    ImplClassElement(element, processingEnv.getPackageName(element), defClass)
-                } else {
-                    null
+                val annotationValue =
+                    element.getAnnotationsByType(InversionImpl::class.java).firstOrNull()?.value
+                checkAndCreateImpl(defClassName, element, annotationValue) {
+                    createImpl(defClassName, element)
                 }
             }
         }
+    }
+
+    private inline fun checkAndCreateImpl(
+        defClassName: String,
+        element: Element,
+        annotationValue: String?,
+        f: () -> ImplElement?
+    ): ImplElement? {
+        val def = defs.firstOrNull { it.defClass.canonicalName == defClassName }
+        return if (def != null) {
+            if (checkMultiMap(annotationValue, element, def.isReturningMap))
+                f()
+            else
+                null
+        } else {
+            val validator =
+                processingEnv.elementUtils.getTypeElement("${defClassName}_FactoryValidator")
+            if (validator != null) {
+//                if (checkMultiMap(annotationValue, element, validator)
+//                    f()
+//                else
+                    null
+            } else {
+                processingEnv.error("No definition found for $defClassName", element)
+                null
+            }
+        }
+    }
+
+    private fun checkMultiMap(
+        annotationValue: String?,
+        element: Element,
+        multiMap: Boolean
+    ): Boolean {
+        return if (multiMap && annotationValue.isNullOrEmpty()) {
+            processingEnv.error(
+                "No key defined for implementation, use the annotation value to define it",
+                element
+            )
+            false
+        } else {
+            true
+        }
+    }
+
+    private fun createImpl(
+        defClassName: String,
+        element: TypeElement
+    ): ImplClassElement {
+        val defClass =
+            processingEnv.elementUtils.getTypeElement(defClassName).asType().asTypeName() as ClassName
+        return ImplClassElement(element, processingEnv.getPackageName(element), defClass)
     }
 
     private fun extractClassFromImplAnnotation(element: TypeElement): String? {
@@ -70,22 +122,12 @@ class ImplElementCalculator(
         return value.takeIf { it != "java.lang.Void" }
     }
 
-    fun calculateFromProvider(element: ExecutableElement): ImplExecutableElement? {
+    fun calculateFromProvider(element: ExecutableElement): ImplElement? {
         val returnType = element.returnType.asTypeName() as ClassName
-        return if (checkDefExists(element, returnType.canonicalName))
+        val annotationValue =
+            element.getAnnotationsByType(InversionProvider::class.java).firstOrNull()?.value
+        return checkAndCreateImpl(returnType.canonicalName, element, annotationValue) {
             ImplExecutableElement(element, processingEnv.getPackageName(element), returnType)
-        else
-            null
-    }
-
-    private val allDefs = defs.map { it.defClass.canonicalName }
-
-    private fun checkDefExists(element: Element, returnType: String): Boolean {
-        return if (allDefs.contains(returnType) || processingEnv.elementUtils.getTypeElement("${returnType}_FactoryValidator") != null) {
-            true
-        } else {
-            processingEnv.error("No definition found for $returnType", element)
-            false
         }
     }
 }
