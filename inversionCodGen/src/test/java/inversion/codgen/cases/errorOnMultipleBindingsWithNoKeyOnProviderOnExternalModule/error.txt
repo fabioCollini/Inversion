@@ -1,0 +1,2 @@
+error: No key defined for implementation, use the annotation value to define it
+    public static final inversion.codgen.MultiBindingInterface provideImplA() {

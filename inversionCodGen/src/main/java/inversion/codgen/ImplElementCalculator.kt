@@ -20,6 +20,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asTypeName
 import inversion.InversionImpl
 import inversion.InversionProvider
+import inversion.internal.NamedGeneratedFactory
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
@@ -73,12 +74,13 @@ class ImplElementCalculator(
             else
                 null
         } else {
-            val validator =
-                processingEnv.elementUtils.getTypeElement("${defClassName}_FactoryValidator")
-            if (validator != null) {
-//                if (checkMultiMap(annotationValue, element, validator)
-//                    f()
-//                else
+            val factory = processingEnv.elementUtils.getTypeElement("${defClassName}_Factory")
+            if (factory != null) {
+                val multiBinding = factory.interfaces.map { it.toString() }
+                    .contains(NamedGeneratedFactory::class.java.canonicalName)
+                if (checkMultiMap(annotationValue, element, multiBinding))
+                    f()
+                else
                     null
             } else {
                 processingEnv.error("No definition found for $defClassName", element)
