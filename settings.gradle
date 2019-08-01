@@ -14,5 +14,5 @@
  * limitations under the License.
  */
 
-include ':app', ':libinterface', ':libimpl', ':inversionLib', ':inversionCodGen'
+include ':sample:app', ':sample:libinterface', ':sample:libimpl', ':inversionLib', ':inversionCodGen'
 rootProject.name='inversion'

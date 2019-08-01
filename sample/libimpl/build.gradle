@@ -20,7 +20,7 @@ apply plugin: 'kotlin-kapt'
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    api project(':libinterface')
+    api project(':sample:libinterface')
 
     api project(':inversionLib')
     kapt project(':inversionCodGen')
