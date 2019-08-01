@@ -1,4 +1,4 @@
-# Inversion [![CircleCI](https://circleci.com/gh/fabioCollini/Inversion.svg?style=svg)](https://circleci.com/gh/fabioCollini/Inversion) [![](https://jitpack.io/v/fabioCollini/Inversion.svg)](https://jitpack.io/#fabioCollini/Inversion)
+# Inversion [![CircleCI](https://circleci.com/gh/fabioCollini/Inversion.svg?style=svg)](https://circleci.com/gh/fabioCollini/Inversion) [![](https://jitpack.io/v/fabioCollini/Inversion.svg)](https://jitpack.io/#fabioCollini/Inversion) [![codecov](https://codecov.io/gh/fabioCollini/Inversion/branch/master/graph/badge.svg)](https://codecov.io/gh/fabioCollini/Inversion)
 
 
 Inversion simplifies the `ServiceLoader` usage to retrieve all the implementations of a certain interface.
