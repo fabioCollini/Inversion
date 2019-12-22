@@ -34,6 +34,6 @@ interface MyInterface2 {
 
     companion object {
         @get:InversionDef
-        val factory by Inversion.of(MyInterface::class)
+        val factory by Inversion.of(MyInterface2::class)
     }
 }
