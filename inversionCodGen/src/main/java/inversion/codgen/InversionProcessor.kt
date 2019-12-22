@@ -17,28 +17,24 @@
 package inversion.codgen
 
 import com.google.auto.service.AutoService
+import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import inversion.*
 import inversion.internal.InversionDelegates
 import inversion.internal.InversionValidator
 import inversion.internal.NamedGeneratedFactory
-import com.squareup.kotlinpoet.*
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
-import me.eugeniomarletti.kotlin.metadata.classKind
-import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
-import me.eugeniomarletti.kotlin.metadata.proto
-import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
-import java.io.File
 import java.util.*
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
-import javax.lang.model.element.*
+import javax.lang.model.element.Element
+import javax.lang.model.element.ExecutableElement
+import javax.lang.model.element.TypeElement
+import javax.lang.model.element.VariableElement
 import kotlin.reflect.KClass
 
 
 @AutoService(Processor::class)
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
-@SupportedOptions(InversionProcessor.KAPT_KOTLIN_GENERATED_OPTION_NAME)
 class InversionProcessor : AbstractProcessor() {
 
     override fun getSupportedAnnotationTypes() =
@@ -86,9 +82,11 @@ class InversionProcessor : AbstractProcessor() {
         )
 
         roundEnvironment.getElementsAnnotatedWith(InversionValidate::class.java)
+            .also {
+                processingEnv.log("InversionValidate: $it")
+            }
             .firstOrNull()
             ?.let { element ->
-                processingEnv.log("validate")
                 validateAllDependencies(
                     element,
                     defs,
@@ -200,7 +198,7 @@ class InversionProcessor : AbstractProcessor() {
                     .build()
             )
             .build()
-            .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
+            .writeTo(processingEnv.filer)
 
         return factoryInterface.canonicalName to "${element.packageName}.$factoryClassName"
     }
@@ -262,7 +260,7 @@ class InversionProcessor : AbstractProcessor() {
                     .build()
             )
             .build()
-            .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
+            .writeTo(processingEnv.filer)
 
         FileSpec.builder(
             "inversion",
@@ -301,12 +299,8 @@ class InversionProcessor : AbstractProcessor() {
                     .build()
             )
             .build()
-            .writeTo(File(processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]))
+            .writeTo(processingEnv.filer)
 
         return validatorClass.canonicalName
-    }
-
-    companion object {
-        const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"
     }
 }
