@@ -34,7 +34,7 @@ dependencies {
 
     implementation 'me.eugeniomarletti.kotlin.metadata:kotlin-metadata:1.4.0'
 
-    api 'com.squareup:kotlinpoet:1.4.0'
+    api 'com.squareup:kotlinpoet:1.4.4'
 
     testImplementation 'junit:junit:4.12'
     testImplementation "org.permissionsdispatcher:kompile-testing:0.1.3"
