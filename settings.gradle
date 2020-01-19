@@ -15,5 +15,5 @@
  */
 include ':inversionLibTest'
 
-include ':sample:app', ':sample:libinterface', ':sample:libimpl', ':inversionLib', ':inversionCodGen'
+include ':sample:app', ':sample:libinterface', ':sample:libimpl', ':inversionLib', ':inversionCodGen', ':inversionLibTest'
 rootProject.name='inversion'

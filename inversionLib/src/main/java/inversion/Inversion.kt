@@ -37,8 +37,8 @@ object Inversion {
     }
 }
 
-class InversionValidationError(val implNotDefined: List<KClass<*>>) : Exception(
-    "Implementation not found for classes:\n" + implNotDefined.joinToString("\n") { "\t\t" + it.java.canonicalName }
+class InversionValidationError(val missingImpls: List<KClass<*>>) : Exception(
+    "Implementation not found for classes:\n" + missingImpls.joinToString("\n") { "\t\t" + it.java.canonicalName }
 )
 
 @Target(AnnotationTarget.PROPERTY_GETTER)

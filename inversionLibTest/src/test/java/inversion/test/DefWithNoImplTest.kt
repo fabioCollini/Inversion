@@ -28,6 +28,6 @@ class DefWithNoImplTest {
         val exception = assertThrows(InversionValidationError::class.java) {
             Inversion.validate()
         }
-        assertThat(exception.implNotDefined).contains(DefWithNoImpl::class)
+        assertThat(exception.missingImpls).contains(DefWithNoImpl::class)
     }
 }

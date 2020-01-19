@@ -26,7 +26,6 @@ import inversion.internal.NamedGeneratedFactory
 import java.util.*
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
-import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 import javax.lang.model.element.VariableElement
@@ -41,8 +40,7 @@ class InversionProcessor : AbstractProcessor() {
         mutableSetOf(
             InversionImpl::class.java.name,
             InversionProvider::class.java.name,
-            InversionDef::class.java.name,
-            InversionValidate::class.java.name
+            InversionDef::class.java.name
         )
 
     override fun getSupportedSourceVersion(): SourceVersion = SourceVersion.latest()
@@ -51,8 +49,6 @@ class InversionProcessor : AbstractProcessor() {
         set: MutableSet<out TypeElement>?,
         roundEnvironment: RoundEnvironment
     ): Boolean {
-        val existingValidators = loadServiceList<InversionValidator>()
-
         val defs = roundEnvironment.getElementsAnnotatedWith(InversionDef::class.java)
             .filterIsInstance<ExecutableElement>()
             .map { DefElement(it, processingEnv.getPackageName(it)) }
@@ -81,58 +77,7 @@ class InversionProcessor : AbstractProcessor() {
             validatorsToBeGenerated
         )
 
-        roundEnvironment.getElementsAnnotatedWith(InversionValidate::class.java)
-            .also {
-                processingEnv.log("InversionValidate: $it")
-            }
-            .firstOrNull()
-            ?.let { element ->
-                validateAllDependencies(
-                    element,
-                    defs,
-                    impls,
-                    existingValidators
-                )
-            }
-
         return true
-    }
-
-    private fun validateAllDependencies(
-        element: Element,
-        defs: List<DefElement>,
-        impls: List<ImplElement>,
-        validators: List<InversionValidator>
-    ) {
-        defs.map { it.factoryInterface }
-            .map { it.canonicalName }
-            .forEach { factoryClass ->
-                val implementations =
-                    readImplementationsFromRes(processingEnv, getResourceFile(factoryClass)) +
-                            impls.filter { it.factoryInterface.canonicalName == factoryClass }
-                if (implementations.isEmpty()) {
-                    processingEnv.error("Implementation not found for $factoryClass", element, null)
-                }
-            }
-
-        validators
-            .forEach {
-                val factoryClass = it.factoryClass
-                val implementations = loadServiceList(factoryClass.java) +
-                        readImplementationsFromRes(
-                            processingEnv,
-                            getResourceFile(factoryClass.java.canonicalName)
-                        ) +
-                        impls.filter { it.factoryInterface.canonicalName == factoryClass.java.canonicalName }
-                if (implementations.isEmpty()) {
-                    val className = it.wrappedClass.asClassName().canonicalName
-                    processingEnv.error(
-                        "Implementation not found for $className",
-                        processingEnv.elementUtils.getTypeElement(className),
-                        null
-                    )
-                }
-            }
     }
 
     private inline fun <reified T> loadServiceList(): List<T> =
