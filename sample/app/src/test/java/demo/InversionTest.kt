@@ -13,7 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-include ':inversionLibTest'
 
-include ':sample:app', ':sample:libinterface', ':sample:libimpl', ':inversionLib', ':inversionCodGen'
-rootProject.name='inversion'
+package demo
+
+import inversion.Inversion
+import org.junit.Test
+
+class InversionTest {
+    @Test
+    fun validateAllDefinitions() {
+        Inversion.validate()
+    }
+}

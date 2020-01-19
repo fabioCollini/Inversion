@@ -13,7 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-include ':inversionLibTest'
 
-include ':sample:app', ':sample:libinterface', ':sample:libimpl', ':inversionLib', ':inversionCodGen'
-rootProject.name='inversion'
+package inversion.test
+
+import inversion.Inversion
+import inversion.InversionDef
+import inversion.of
+
+interface DefWithNoImpl {
+    fun doSomething(): String
+
+    companion object {
+        @get:InversionDef
+        val factory by Inversion.of(DefWithNoImpl::class)
+    }
+}

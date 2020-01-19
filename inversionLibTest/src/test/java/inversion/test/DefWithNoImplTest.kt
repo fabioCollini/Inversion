@@ -13,7 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-include ':inversionLibTest'
 
-include ':sample:app', ':sample:libinterface', ':sample:libimpl', ':inversionLib', ':inversionCodGen'
-rootProject.name='inversion'
+package inversion.test
+
+import com.google.common.truth.Truth.assertThat
+import inversion.Inversion
+import inversion.InversionValidationError
+import org.junit.Assert.assertThrows
+import org.junit.Test
+
+class DefWithNoImplTest {
+    @Test
+    fun throwErrorWhenNoImplIsAvailable() {
+        val exception = assertThrows(InversionValidationError::class.java) {
+            Inversion.validate()
+        }
+        assertThat(exception.implNotDefined).contains(DefWithNoImpl::class)
+    }
+}

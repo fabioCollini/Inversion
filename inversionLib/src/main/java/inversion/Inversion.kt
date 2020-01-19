@@ -16,10 +16,30 @@
 
 package inversion
 
+import inversion.internal.InversionValidator
+import java.util.*
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KClass
 
-object Inversion
+object Inversion {
+    fun validate() {
+        val classLoader = InversionValidator::class.java.classLoader
+        val missingImpl = ServiceLoader.load(InversionValidator::class.java, classLoader).mapNotNull { validator ->
+            if (ServiceLoader.load(validator.factoryClass.java, classLoader).iterator().hasNext()) {
+                null
+            } else {
+                validator.wrappedClass
+            }
+        }
+        if (missingImpl.isNotEmpty()) {
+            throw InversionValidationError(missingImpl)
+        }
+    }
+}
+
+class InversionValidationError(val implNotDefined: List<KClass<*>>) : Exception(
+    "Implementation not found for classes:\n" + implNotDefined.joinToString("\n") { "\t\t" + it.java.canonicalName }
+)
 
 @Target(AnnotationTarget.PROPERTY_GETTER)
 annotation class InversionDef
@@ -30,6 +50,7 @@ annotation class InversionImpl(val value: String = "", val def: KClass<*> = Noth
 @Target(AnnotationTarget.FUNCTION)
 annotation class InversionProvider(val value: String = "")
 
+@Deprecated("Not supported anymore, please invoke Inversion.validate() instead")
 annotation class InversionValidate
 
 fun <R, T : Any> Inversion.of(c: KClass<T>): ReadOnlyProperty<R, () -> T> =

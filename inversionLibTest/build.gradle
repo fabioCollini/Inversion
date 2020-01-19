@@ -13,7 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-include ':inversionLibTest'
 
-include ':sample:app', ':sample:libinterface', ':sample:libimpl', ':inversionLib', ':inversionCodGen'
-rootProject.name='inversion'
+apply plugin: 'java-library'
+apply plugin: 'kotlin'
+apply plugin: 'kotlin-kapt'
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+    api project(':inversionLib')
+    kapt project(':inversionCodGen')
+
+    testImplementation 'junit:junit:4.13'
+    testImplementation "com.google.truth:truth:1.0.1"
+}
+
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"

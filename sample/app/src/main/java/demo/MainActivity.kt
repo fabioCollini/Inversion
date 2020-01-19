@@ -19,11 +19,12 @@ package demo
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.inversion.BuildConfig
 import demo.libinterface.Container
 import demo.libinterface.factory
 import demo.libinterface.multipleInstancesMap
-import inversion.InversionValidate
 import com.inversion.R
+import inversion.Inversion
 
 object MyContainer : Container {
     private var last: Any? = null
@@ -34,11 +35,13 @@ object MyContainer : Container {
             last as V
 }
 
-@InversionValidate
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (BuildConfig.DEBUG) {
+            Inversion.validate()
+        }
         setContentView(R.layout.activity_main)
         val impl = MyContainer.factory()
         val map = multipleInstancesMap()
