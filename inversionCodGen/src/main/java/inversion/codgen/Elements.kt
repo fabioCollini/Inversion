@@ -29,7 +29,11 @@ import javax.lang.model.element.*
 private val Element.isCompanionObject: Boolean
     @UseExperimental(KotlinPoetMetadataPreview::class)
     get() {
-        return (this as TypeElement).toImmutableKmClass().isCompanionObject
+        return try {
+            (this as? TypeElement)?.toImmutableKmClass()?.isCompanionObject ?: false
+        } catch (e: Exception) {
+            false
+        }
     }
 
 private fun factoryInterface(type: ClassName) =
@@ -42,16 +46,19 @@ interface ImplElement {
     val simpleName: Name
     val factoryInterface: ClassName get() = factoryInterface(defClass)
     val instanceName: String
+    val objectOwner: Element?
 }
 
 class ImplExecutableElement(
-    element: ExecutableElement,
+    private val element: ExecutableElement,
     override val packageName: String,
     override val defClass: ClassName
 ) : ImplElement {
     override val parameters: List<VariableElement> = element.parameters
     override val simpleName: Name = element.simpleName
     override val instanceName = element.getAnnotation(InversionProvider::class.java).value
+    override val objectOwner: Element?
+        get() = if (element.enclosingElement.isCompanionObject) element.enclosingElement else null
 }
 
 class ImplClassElement(
@@ -62,6 +69,7 @@ class ImplClassElement(
     override val parameters: List<VariableElement> = emptyList()
     override val simpleName: Name = element.simpleName
     override val instanceName = element.getAnnotation(InversionImpl::class.java).value
+    override val objectOwner: Element? = null
 }
 
 class DefElement(

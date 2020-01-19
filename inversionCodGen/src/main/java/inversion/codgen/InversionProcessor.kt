@@ -127,13 +127,22 @@ class InversionProcessor : AbstractProcessor() {
                                 }
                             }
                             .apply {
-                                if (element.parameters.getOrNull(0)?.isReceiver() == true)
-                                    addStatement("return param.${element.simpleName}()")
-                                else
-                                    addStatement(
-                                        "return ${element.simpleName}(%L)",
-                                        element.parameters.joinToString { it.simpleName.toString() }
-                                    )
+                                val objectOwner = element.objectOwner
+                                when {
+                                    element.parameters.getOrNull(0)?.isReceiver() == true ->
+                                        addStatement("return param.${element.simpleName}()")
+                                    objectOwner != null ->
+                                        addStatement(
+                                            "return %T.${element.simpleName}(%L)",
+                                            objectOwner,
+                                            element.parameters.joinToString { it.simpleName.toString() }
+                                        )
+                                    else ->
+                                        addStatement(
+                                            "return ${element.simpleName}(%L)",
+                                            element.parameters.joinToString { it.simpleName.toString() }
+                                        )
+                                }
                             }
                             .build()
                     )
