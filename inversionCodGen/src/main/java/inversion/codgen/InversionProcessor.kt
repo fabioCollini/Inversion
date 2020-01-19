@@ -19,12 +19,19 @@ package inversion.codgen
 import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import inversion.*
+import inversion.Inversion
+import inversion.InversionDef
+import inversion.InversionImpl
+import inversion.InversionProvider
 import inversion.internal.InversionDelegates
 import inversion.internal.InversionValidator
+import inversion.internal.InversionValidatorAdapter
 import inversion.internal.NamedGeneratedFactory
 import java.util.*
-import javax.annotation.processing.*
+import javax.annotation.processing.AbstractProcessor
+import javax.annotation.processing.Processor
+import javax.annotation.processing.RoundEnvironment
+import javax.annotation.processing.SupportedSourceVersion
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
@@ -173,35 +180,10 @@ class InversionProcessor : AbstractProcessor() {
                     .build()
             )
             .addType(
-                TypeSpec.classBuilder(
-                    validatorClass
-                )
-                    .addSuperinterface(InversionValidator::class)
-                    .addProperty(
-                        PropertySpec.builder(
-                            "factoryClass",
-                            KClass::class.asClassName().parameterizedBy(factoryInterface),
-                            KModifier.OVERRIDE
-                        )
-                            .initializer("%T::class", factoryInterface)
-                            .build()
-                    )
-                    .addProperty(
-                        PropertySpec.builder(
-                            "wrappedClass",
-                            KClass::class.asClassName().parameterizedBy(returnType),
-                            KModifier.OVERRIDE
-                        )
-                            .initializer("%T::class", returnType)
-                            .build()
-                    )
-//                    .run {
-//                        if (element.isReturningMap) {
-//                            this
-//                        } else {
-//                            this
-//                        }
-//                    }
+                TypeSpec.classBuilder(validatorClass)
+                    .superclass(InversionValidatorAdapter::class)
+                    .addSuperclassConstructorParameter("%T::class", factoryInterface)
+                    .addSuperclassConstructorParameter("%T::class", returnType)
                     .build()
             )
             .build()

@@ -16,14 +16,10 @@
 
 package inversion.codgen
 
-import inversion.internal.InversionValidator
+import inversion.internal.InversionValidatorAdapter
 import inversion.internal.NamedGeneratedFactory
-import kotlin.reflect.KClass
 
 interface MultiBindingInterface_Factory : () -> MultiBindingInterface, NamedGeneratedFactory
 
-class MultiBindingInterface_FactoryValidator : InversionValidator {
-  override val factoryClass: KClass<MultiBindingInterface_Factory> = MultiBindingInterface_Factory::class
-
-  override val wrappedClass: KClass<MultiBindingInterface> = MultiBindingInterface::class
-}
+class MultiBindingInterface_FactoryValidator : InversionValidatorAdapter(MultiBindingInterface_Factory::class,
+  MultiBindingInterface::class)
