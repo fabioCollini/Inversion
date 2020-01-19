@@ -48,7 +48,7 @@ class MainActivity : AppCompatActivity() {
 
 ## Custom implementation creation
 
-In case an extra logic is needed to create the real implementation an `InversionProvider` annotated method can be used:
+In case an extra logic is needed to create the real implementation, an `InversionProvider` annotated method can be used:
 
 ```kotlin
 @InversionProvider
@@ -139,8 +139,8 @@ and the dependencies in the `build.gradle` of the modules:
 
 ```gradle
 dependencies {
-    kapt 'com.github.fabioCollini.inversion:inversionCodGen:0.2'
-    implementation 'com.github.fabioCollini.inversion:inversionLib:0.2'
+    kapt 'com.github.fabioCollini.inversion:inversionCodGen:0.3.1'
+    implementation 'com.github.fabioCollini.inversion:inversionLib:0.3.1'
 }
 ```
 
