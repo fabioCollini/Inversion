@@ -19,18 +19,16 @@ package inversion.codgen
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.asTypeName
+import com.squareup.kotlinpoet.metadata.isCompanionObject
+import com.squareup.kotlinpoet.metadata.toImmutableKmClass
 import inversion.InversionImpl
 import inversion.InversionProvider
-import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
-import me.eugeniomarletti.kotlin.metadata.classKind
-import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
-import me.eugeniomarletti.kotlin.metadata.proto
-import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
 import javax.lang.model.element.*
 
 private val Element.isCompanionObject: Boolean
+    @UseExperimental(com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview::class)
     get() {
-        return (kotlinMetadata as KotlinClassMetadata).data.proto.classKind == ProtoBuf.Class.Kind.COMPANION_OBJECT
+        return (this as TypeElement).toImmutableKmClass().isCompanionObject
     }
 
 private fun factoryInterface(type: ClassName) =
