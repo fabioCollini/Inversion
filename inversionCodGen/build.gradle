@@ -27,7 +27,7 @@ dependencies {
 
     implementation files(org.gradle.internal.jvm.Jvm.current().toolsJar)
 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     implementation 'com.google.auto.service:auto-service-annotations:1.0-rc5'
     kapt 'com.google.auto.service:auto-service:1.0-rc5'
@@ -36,7 +36,7 @@ dependencies {
 
     api 'com.squareup:kotlinpoet:1.5.0'
 
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13'
     testImplementation "org.permissionsdispatcher:kompile-testing:0.1.3"
 }
 
