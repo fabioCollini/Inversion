@@ -28,6 +28,7 @@ import inversion.Inversion
 
 object MyContainer : Container {
     private var last: Any? = null
+    @Suppress("UNCHECKED_CAST")
     override fun <V> getOrCreate(f: () -> V): V =
         if (last == null)
             f().also { last = it }

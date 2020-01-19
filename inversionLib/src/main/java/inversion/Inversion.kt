@@ -53,8 +53,8 @@ annotation class InversionProvider(val value: String = "")
 @Deprecated("Not supported anymore, please invoke Inversion.validate() instead")
 annotation class InversionValidate
 
-fun <R, T : Any> Inversion.of(c: KClass<T>): ReadOnlyProperty<R, () -> T> =
+fun <R, T : Any> Inversion.of(@Suppress("UNUSED_PARAMETER") c: KClass<T>): ReadOnlyProperty<R, () -> T> =
     throw Exception("This method shouldn't never be invoked, there are some problems in the Inversion annotation processor")
 
-fun <R, T : Any> Inversion.mapOf(c: KClass<T>): ReadOnlyProperty<R, () -> Map<String, T>> =
+fun <R, T : Any> Inversion.mapOf(@Suppress("UNUSED_PARAMETER") c: KClass<T>): ReadOnlyProperty<R, () -> Map<String, T>> =
     throw Exception("This method shouldn't never be invoked, there are some problems in the Inversion annotation processor")

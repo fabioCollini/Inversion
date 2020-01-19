@@ -201,7 +201,20 @@ class InversionProcessor : AbstractProcessor() {
                             .build()
                     )
                     .receiver(Inversion::class)
-                    .addParameter("c", KClass::class.asClassName().parameterizedBy(returnType))
+                    .addParameter(
+                        ParameterSpec.builder(
+                            "c",
+                            KClass::class.asClassName().parameterizedBy(returnType)
+                        )
+                            .addAnnotation(
+                                AnnotationSpec.builder(Suppress::class)
+                                    .addMember(
+                                        "\"UNUSED_PARAMETER\""
+                                    )
+                                    .build()
+                            )
+                            .build()
+                    )
                     .let {
                         val prefix = if (element.isReturningMap) "mapDelegate" else "delegate"
                         val suffix =

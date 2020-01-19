@@ -25,4 +25,4 @@ class MyImpl : MyInterface {
 }
 
 @InversionProvider
-fun provideImpl(param: MyClass): MyInterface = MyImpl()
+fun provideImpl(@Suppress("UNUSED_PARAMETER") param: MyClass): MyInterface = MyImpl()
