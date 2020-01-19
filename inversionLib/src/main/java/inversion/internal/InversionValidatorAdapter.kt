@@ -19,6 +19,6 @@ package inversion.internal
 import kotlin.reflect.KClass
 
 open class InversionValidatorAdapter(
-    override val wrappedClass: KClass<*>,
-    override val factoryClass: KClass<*>
+    override val factoryClass: KClass<*>,
+    override val wrappedClass: KClass<*>
 ) : InversionValidator
